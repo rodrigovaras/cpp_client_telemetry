@@ -6,11 +6,12 @@
 #     HEAD_REF main
 # )
 
-set(SOURCE_PATH "D:/github/cpp_client_telemetry")
+set(SOURCE_PATH "../../..")
 
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
+        -DBUILD_VCPKG=ON
         -DBUILD_PACKAGE=NO
         -DBUILD_TEST_TOOL=NO
         -DBUILD_UNIT_TESTS=NO

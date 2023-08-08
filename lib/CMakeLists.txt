@@ -201,7 +201,8 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
 elseif(PAL_IMPLEMENTATION STREQUAL "WIN32")
 # Win32 Desktop for now.
 # TODO: define a separate PAL for Win10 cmake build
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
+
+#include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
 add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -DMATSDK_PLATFORM_WINDOWS=1 -DMATSDK_SHARED_LIB=1 -D_UTC_SDK -D_CRT_SECURE_NO_WARNINGS -DUSE_BOND -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7)
 remove_definitions(-D_MBCS)
   list(APPEND SRCS
@@ -245,6 +246,15 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
    target_compile_options(mat PUBLIC "-pthread")
   endif()
 endif()
+
+if(BUILD_VCPKG STREQUAL "ON")
+message("-- vcpkg Building static SDK library")
+add_library(mat STATIC ${SRCS})
+
+target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+
+install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+else()
 
 if(BUILD_SHARED_LIBS STREQUAL "ON")
   message("-- Building shared SDK library")
@@ -301,6 +311,7 @@ endif()
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
+endif()
 #if(PAL_IMPLEMENTATION STREQUAL "CPP11")
 #  #target_link_libraries(mat PUBLIC libcurl.a libz.a libssl.a libcrypto.a "${SQLITE_LIBRARY}" "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 #  #target_link_libraries(mat PUBLIC libsqlite3.a libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
