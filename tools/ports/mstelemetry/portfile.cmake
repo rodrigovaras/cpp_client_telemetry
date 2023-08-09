@@ -6,7 +6,8 @@
 #     HEAD_REF main
 # )
 
-set(SOURCE_PATH "../../..")
+get_filename_component(SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
+message("Using local source snapshot from ${SOURCE_PATH}")
 
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
