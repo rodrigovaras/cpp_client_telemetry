@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "FileUtils.hpp"
@@ -21,7 +21,7 @@ namespace MAT_NS_BEGIN
     size_t FileGetSize(const char* filename)
     {
 #ifdef _WIN32
-#ifndef _WINRT
+#if !defined(_WINRT) && !defined(_WINRT_DLL)
         /* Use Win32 Desktop API to get file name. Cannot rely on ifstream(wstring) if built with libc++ instead of msvcrt++ */
         LARGE_INTEGER largeInt;
         std::wstring filename_w = to_utf16_string(filename);

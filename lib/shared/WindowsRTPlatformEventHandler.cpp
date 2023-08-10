@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifdef WIN10_CS
@@ -63,26 +63,19 @@ namespace Microsoft {
 
                 PlatformEventHandler::~PlatformEventHandler()
                 {
-                    try
+                    if (this->m_suspendToken.Value != 0)
                     {
-                        if (this->m_suspendToken.Value != 0)
-                        {
-                            Application::Current->Suspending -= this->m_suspendToken;
-                        }
-
-                        if (this->m_resumeToken.Value != 0)
-                        {
-                            Application::Current->Resuming -= this->m_resumeToken;
-                        }
-
-                        if (this->m_unhandledExceptionToken.Value != 0)
-                        {
-                            Application::Current->UnhandledException -= this->m_unhandledExceptionToken;
-                        }
+                        Application::Current->Suspending -= this->m_suspendToken;
                     }
-                    catch (Exception^ e)
+
+                    if (this->m_resumeToken.Value != 0)
                     {
-                        // Access to Application::Current can generate COM exceptions.
+                        Application::Current->Resuming -= this->m_resumeToken;
+                    }
+
+                    if (this->m_unhandledExceptionToken.Value != 0)
+                    {
+                        Application::Current->UnhandledException -= this->m_unhandledExceptionToken;
                     }
                 }
 

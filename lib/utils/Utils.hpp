@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef LIB_UTILS_HPP
@@ -40,9 +40,8 @@ namespace std
 #include <stdlib.h>
 #endif
 
-#if defined(WINDOWS_UWP) || defined(__cplusplus_winrt)
-#include <Windows.h>
-#define _WINRT
+#if defined(_WINRT) || defined(_WINRT_DLL)
+#include <winrt/base.h>
 #endif
 
 #ifndef EOK
@@ -66,9 +65,6 @@ namespace MAT_NS_BEGIN {
 
     long GetCurrentProcessId();
 
-    /* Detects if current process is running in a packaged app*/
-    bool IsRunningInApp();
-
     std::string GetTempDirectory();
     std::string GetAppLocalTempDirectory();
 
@@ -86,11 +82,13 @@ namespace MAT_NS_BEGIN {
         return std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
     }
 
-#ifdef _WINRT
+#if defined(_WINRT) || defined(_WINRT_DLL)
 
-    Platform::String ^to_platform_string(const std::string& s);
+    winrt::hstring to_platform_string(const std::string& s);
 
-    std::string from_platform_string(Platform::String ^ ps);
+    std::string from_platform_string(winrt::hstring ps);
+
+    std::string from_platform_string(winrt::param::hstring& ps);
 
 #endif
 

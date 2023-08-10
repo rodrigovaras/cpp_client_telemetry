@@ -1,7 +1,4 @@
-# Honor visibility properties for all target types
-cmake_policy(SET CMP0063 NEW)
-
-include_directories( . ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include/public ${CMAKE_CURRENT_SOURCE_DIR}/include/public ${CMAKE_CURRENT_SOURCE_DIR}/include/mat ${CMAKE_CURRENT_SOURCE_DIR}/pal ${CMAKE_CURRENT_SOURCE_DIR}/utils ${CMAKE_CURRENT_SOURCE_DIR}/modules/exp ${CMAKE_CURRENT_SOURCE_DIR}/modules/dataviewer ${CMAKE_CURRENT_SOURCE_DIR}/modules/privacyguard ${CMAKE_CURRENT_SOURCE_DIR}/modules/liveeventinspector ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Reachability ${CMAKE_CURRENT_SOURCE_DIR}/modules/cds ${CMAKE_CURRENT_SOURCE_DIR}/modules/signals /usr/local/include )
+include_directories( . ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include/public ${CMAKE_CURRENT_SOURCE_DIR}/include/public ${CMAKE_CURRENT_SOURCE_DIR}/include/mat ${CMAKE_CURRENT_SOURCE_DIR}/pal ${CMAKE_CURRENT_SOURCE_DIR}/utils ${CMAKE_CURRENT_SOURCE_DIR}/modules/exp ${CMAKE_CURRENT_SOURCE_DIR}/modules/dataviewer ${CMAKE_CURRENT_SOURCE_DIR}/modules/privacyguard ${CMAKE_CURRENT_SOURCE_DIR}/modules/liveeventinspector ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/Reachability ${CMAKE_CURRENT_SOURCE_DIR}/modules/cds /usr/local/include )
 
 set(SRCS decorators/BaseDecorator.cpp
   packager/BondSplicer.cpp
@@ -103,13 +100,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/cds/ AND BUILD_CDS)
   )
 endif()
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/signals/ AND BUILD_SIGNALS)
-  list(APPEND SRCS
-    modules/signals/Signals.cpp
-    modules/signals/SignalsEncoder.cpp
-  )
-endif()
-
 if(PAL_IMPLEMENTATION STREQUAL "CPP11")
   if(APPLE)
     list(APPEND SRCS
@@ -156,58 +146,35 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
     )
   endif()
   if(APPLE AND BUILD_OBJC_WRAPPER)
-    message("Include ObjC Wrappers")
-    list(APPEND SRCS
-      ../wrappers/obj-c/ODWLogger.mm
-      ../wrappers/obj-c/ODWLogManager.mm
-      ../wrappers/obj-c/ODWEventProperties.mm
-      ../wrappers/obj-c/ODWLogConfiguration.mm
-      ../wrappers/obj-c/ODWSemanticContext.mm
-      )
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/dataviewer/)
-        list(APPEND SRCS
-        ../wrappers/obj-c/ODWDiagnosticDataViewer.mm
-        )
+	message("Include Wrappers")
+	list(APPEND SRCS
+	  ../wrappers/obj-c/ODWLogger.mm
+	  ../wrappers/obj-c/ODWLogManager.mm
+	  ../wrappers/obj-c/ODWEventProperties.mm
+	  ../wrappers/obj-c/ODWLogConfiguration.mm
+	  ../wrappers/obj-c/ODWSemanticContext.mm
+	  )
+	if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/dataviewer/)
+  		list(APPEND SRCS
+		  ../wrappers/obj-c/ODWDiagnosticDataViewer.mm
+  		)
+	endif()
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/privacyguard/ AND BUILD_PRIVACYGUARD)
+          list(APPEND SRCS
+          ../wrappers/obj-c/ODWCommonDataContext.mm
+          ../wrappers/obj-c/ODWPrivacyGuard.mm
+          ../wrappers/obj-c/ODWPrivacyGuardInitConfig.mm
+          )
     endif()
-      if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/privacyguard/ AND BUILD_PRIVACYGUARD)
-            list(APPEND SRCS
-            ../wrappers/obj-c/ODWCommonDataContext.mm
-            ../wrappers/obj-c/ODWPrivacyGuard.mm
-            ../wrappers/obj-c/ODWPrivacyGuardInitConfig.mm
-            )
-      endif()
   endif()
-
-  if(APPLE AND BUILD_SWIFT_WRAPPER)
-    message("Building Swift Wrappers")
-    # Run swift build for the Swift Wrappers Package
-    string(TOLOWER ${CMAKE_BUILD_TYPE} LOWER_BUILD_TYPE)
-    execute_process(
-      COMMAND swift build
-      -c ${LOWER_BUILD_TYPE}
-      --scratch-path ${CMAKE_BINARY_DIR}/OneDSSwift
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../wrappers/swift
-      RESULT_VARIABLE SWIFT_BUILD_RESULT
-    )
-
-    if(SWIFT_BUILD_RESULT EQUAL 0)
-        message("Swift Wrappers build succeeded!")
-    else()
-        message(FATAL_ERROR, "Swift build failed with error code: ${SWIFT_BUILD_RESULT}")
-    endif()
-
-  endif()
-
 elseif(PAL_IMPLEMENTATION STREQUAL "WIN32")
-# Win32 Desktop for now.
-# TODO: define a separate PAL for Win10 cmake build
-
-if (NOT BUILD_VCPKG STREQUAL "ON")
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
-endif()
-
-add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -DMATSDK_PLATFORM_WINDOWS=1 -DMATSDK_SHARED_LIB=1 -D_UTC_SDK -D_CRT_SECURE_NO_WARNINGS -DUSE_BOND -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7)
-remove_definitions(-D_MBCS)
+  # Win32 Desktop for now.
+  # TODO: define a separate PAL for Win10 cmake build
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
+  add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -DMATSDK_PLATFORM_WINDOWS=1 -D_UTC_SDK -D_CRT_SECURE_NO_WARNINGS -DUSE_BOND -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7)
+  add_definitions(/wd4005 /wd4503)
+  
+  remove_definitions(-D_MBCS)
   list(APPEND SRCS
     http/HttpClient_WinInet.cpp
     http/HttpClient_WinInet.hpp
@@ -223,6 +190,48 @@ remove_definitions(-D_MBCS)
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/utc)
     list(APPEND SRCS
       modules/utc/desktop/UtcHelpers.cpp
+      modules/utc/UtcTelemetrySystem.cpp
+    )
+  endif()
+
+elseif(PAL_IMPLEMENTATION STREQUAL "GAMECORE")
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite ${CMAKE_CURRENT_SOURCE_DIR}/pal/gamecore)
+  add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7 -DWINAPI_FAMILY=WINAPI_FAMILY_GAMES -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_NO_SYNC)
+  add_definitions(/wd4005 /wd4503 /wd4267)
+  remove_definitions(-D_MBCS)
+  list(APPEND SRCS
+    http/HttpClient_WinHttp.cpp
+    http/HttpClient_WinHttp.hpp
+    pal/desktop/WindowsDesktopDeviceInformationImpl.cpp
+    pal/desktop/WindowsDesktopNetworkInformationImpl.cpp
+    pal/desktop/WindowsDesktopSystemInformationImpl.cpp
+    utils/StringConversion.cpp
+  )
+elseif(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite ${CMAKE_CURRENT_SOURCE_DIR}/pal/universal ${CMAKE_CURRENT_SOURCE_DIR}/shared "${CMAKE_CURRENT_SOURCE_DIR}/../Solutions/win10-lib/Generated Files/")
+  add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -D_WINRT_DLL -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -D_WINRT -D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(/wd4005)
+  remove_definitions(-D_MBCS)
+  list(APPEND SRCS
+    http/HttpClient_WinRt.cpp
+    http/HttpClient_WinRt.hpp
+    pal/universal/pch.h
+    pal/universal/WindowsRTHelpers.cpp
+    pal/universal/WindowsRuntimeDeviceInformationImpl.cpp
+    pal/universal/WindowsRuntimeNetworkInformationImpl.cpp
+    pal/universal/WindowsRuntimeSystemInformationImpl.cpp
+    utils/StringConversion.cpp
+  )
+
+  list(APPEND IMPORT_PROJECTS
+    ${CPPWINRT_NUGET_PATH}/build/native/Microsoft.Windows.CppWinRT.props
+    ${CPPWINRT_NUGET_PATH}/build/native/Microsoft.Windows.CppWinRT.targets
+  )
+
+  # UTC module
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/utc)
+    list(APPEND SRCS
+      modules/utc/universal/UtcHelpers.cpp
       modules/utc/UtcTelemetrySystem.cpp
     )
   endif()
@@ -250,21 +259,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   endif()
 endif()
 
-if(BUILD_VCPKG STREQUAL "ON")
-message("-- vcpkg Building static SDK library")
-add_library(mat STATIC ${SRCS})
-
-find_package(unofficial-sqlite3 CONFIG)
-find_package(ZLIB REQUIRED)
-
-target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
-
-install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
-else()
-
 if(BUILD_SHARED_LIBS STREQUAL "ON")
   message("-- Building shared SDK library")
-
+  
   # include(FindCURL)
   # find_package(CURL REQUIRED)
   # set(CMAKE_REQUIRED_LIBRARIES "${CURL_LIBRARIES}")
@@ -272,6 +269,24 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
   # find_package(sqlite3 REQUIRED)
 
   add_library(mat SHARED ${SRCS})
+  if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
+    target_compile_options(mat PUBLIC /std:c++20)
+  endif()
+
+  if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    add_library(mat_slimcore SHARED ${SRCS})
+    target_compile_definitions(mat_slimcore PUBLIC -D_PPLTASK_ASYNC_LOGGING=0)
+    target_compile_options(mat_slimcore PUBLIC /std:c++17)
+  endif()
+
+  if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
+    set_target_properties(mat PROPERTIES VS_PROJECT_IMPORT "${IMPORT_PROJECTS}")
+    
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      set_target_properties(mat_slimcore PROPERTIES VS_PROJECT_IMPORT "${IMPORT_PROJECTS}")
+    endif()
+
+  endif()
 
   # Add flags for obtaining system UUID via IOKit
   if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -288,36 +303,76 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
     add_library(sqlite3 STATIC IMPORTED GLOBAL)
     add_library(z STATIC IMPORTED GLOBAL)
     target_link_libraries(mat PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      target_link_libraries(mat_slimcore PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+    endif()
   else()
     # Prefer shared libraries for sqlite3 and zlib
     add_library(sqlite3 SHARED IMPORTED GLOBAL)
     add_library(z SHARED IMPORTED GLOBAL)
     target_link_libraries(mat PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      target_link_libraries(mat_slimcore PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+    endif()
   endif()
 
   # target_link_libraries(mat PUBLIC libsqlite3 libcurl.a libz.a libssl.a libcrypto.a "${SQLITE_LIBRARY}" "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
   install(TARGETS mat EXPORT mat LIBRARY DESTINATION ${INSTALL_LIB_DIR})
+  if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    install(TARGETS mat_slimcore EXPORT mat_slimcore LIBRARY DESTINATION ${INSTALL_LIB_DIR})
+  endif()
 else()
   message("-- Building static SDK library")
   add_library(mat STATIC ${SRCS})
-  if(LINK_STATIC_DEPENDS)
-    if(PAL_IMPLEMENTATION STREQUAL "WIN32")
-      target_link_libraries(mat ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
-    else()
-      add_library(sqlite3 STATIC IMPORTED GLOBAL)
-      add_library(z STATIC IMPORTED GLOBAL)
-      #
-      # TODO: allow adding "${Tcmalloc_LIBRARIES}" to target_link_libraries for memory leak debugging
-      #
-      target_link_libraries(mat PRIVATE libsqlite3.a PUBLIC libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+  if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
+    target_compile_options(mat PUBLIC /std:c++20)
+  endif()
+
+  if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    add_library(mat_slimcore STATIC ${SRCS})
+    target_compile_definitions(mat_slimcore PUBLIC -D_PPLTASK_ASYNC_LOGGING=0)
+    target_compile_options(mat_slimcore PUBLIC /std:c++17)
+  endif()
+
+  if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
+    set_target_properties(mat PROPERTIES VS_PROJECT_IMPORT "${IMPORT_PROJECTS}")
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      set_target_properties(mat_slimcore PROPERTIES VS_PROJECT_IMPORT "${IMPORT_PROJECTS}")
     endif()
   endif()
+
+  add_library(sqlite3 STATIC IMPORTED GLOBAL)
+  add_library(z STATIC IMPORTED GLOBAL)
+
+  if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
+    target_link_libraries(mat PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      target_link_libraries(mat_slimcore PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+    endif()
+    if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
+      target_link_libraries(mat PUBLIC WindowsApp.lib)
+      if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+        target_link_libraries(mat_slimcore PUBLIC WindowsApp.lib)
+      endif()
+
+    endif()
+  else()
+    #
+    # TODO: allow adding "${Tcmalloc_LIBRARIES}" to target_link_libraries for memory leak debugging
+    #
+    target_link_libraries(mat PRIVATE libsqlite3.a PUBLIC libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+  endif()
   install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+  if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    install(TARGETS mat_slimcore EXPORT mat_slimcore ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+  endif()
 endif()
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
-endif()
 #if(PAL_IMPLEMENTATION STREQUAL "CPP11")
 #  #target_link_libraries(mat PUBLIC libcurl.a libz.a libssl.a libcrypto.a "${SQLITE_LIBRARY}" "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 #  #target_link_libraries(mat PUBLIC libsqlite3.a libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )

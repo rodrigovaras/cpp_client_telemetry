@@ -25,25 +25,18 @@ if(APPLE)
 
   # iOS build options
   option(BUILD_IOS           "Build for iOS"               NO)
-  option(FORCE_RESET_OSX_DEPLOYMENT_TARGET "Clear the OSX Deployment Target Set" YES)
-  if (DEFINED FORCE_RESET_DEPLOYMENT_TARGET)
-    set(FORCE_RESET_OSX_DEPLOYMENT_TARGET ${FORCE_RESET_DEPLOYMENT_TARGET})
-  endif()
 
   if(BUILD_IOS)
     set(TARGET_ARCH "APPLE")
     set(IOS True)
     set(APPLE True)
-
-    if(FORCE_RESET_OSX_DEPLOYMENT_TARGET)
-      set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
-      if((${IOS_PLAT} STREQUAL "iphonesimulator") AND ((${IOS_ARCH} STREQUAL "arm64") OR (${IOS_ARCH} STREQUAL "arm64e")))
-        # iOS arm64 simulator is supported starting BigSur
-        # Unfortunately, CMAKE produces a device binary (not simulator) when providing -miphoneos-version-min flag when building iOS arm64 simulator
-      else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
-      endif()
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
+    if((${IOS_PLAT} STREQUAL "iphonesimulator") AND (${IOS_ARCH} STREQUAL "arm64"))
+      # iOS arm64 simulator is supported starting BigSur
+      # Unfortunately, CMAKE produces a device binary (not simulator) when providing -miphoneos-version-min flag when building iOS arm64 simulator
+    else()
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
     endif()
 
     if((${IOS_PLAT} STREQUAL "iphoneos") OR (${IOS_PLAT} STREQUAL "iphonesimulator"))
@@ -56,12 +49,12 @@ if(APPLE)
       set(IOS_PLATFORM "iphonesimulator")
       set(CMAKE_SYSTEM_PROCESSOR x86_64)
     elseif(${IOS_ARCH} STREQUAL "arm64")
-      set(IOS_PLATFORM ${IOS_PLAT})
+      set(IOS_PLATFORM "iphoneos")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64")
       set(CMAKE_SYSTEM_PROCESSOR arm64)
     elseif(${IOS_ARCH} STREQUAL "arm64e")
-      set(IOS_PLATFORM ${IOS_PLAT})
+      set(IOS_PLATFORM "iphoneos")
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64e")
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64e")
       set(CMAKE_SYSTEM_PROCESSOR arm64e)
@@ -101,56 +94,52 @@ message("-- CMAKE_BUILD_TYPE:       ${CMAKE_BUILD_TYPE}")
 message("-- TARGET_ARCH:            ${TARGET_ARCH}")
 message("-- CMAKE_CXX_COMPILER_ID:  ${CMAKE_CXX_COMPILER_ID}")
 
-include(tools/ParseOsRelease.cmake)
+if((APPLE) OR (${CMAKE_SYSTEM_NAME} STREQUAL "Android"))
+  include(tools/ParseOsRelease.cmake)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-set(WARN_FLAGS "/W4 /WX")
-else()
-# No -pedantic -Wno-extra-semi -Wno-gnu-zero-variadic-macro-arguments
-set(WARN_FLAGS "-Wall -Werror -Wextra -Wno-unused-parameter")
-endif()
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # Using GCC with -s and -Wl linker flags
-  set(REL_FLAGS "-s -Wl,--gc-sections -Os ${WARN_FLAGS} -ffunction-sections -fdata-sections -fmerge-all-constants -ffast-math")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(REL_FLAGS "${WARN_FLAGS}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-  # AppleClang does not support -ffunction-sections and -fdata-sections with the -fembed-bitcode and -fembed-bitcode-marker
-  set(REL_FLAGS "-Os ${WARN_FLAGS} -fmerge-all-constants -ffast-math")
-else()
-  # Using clang - strip unsupported GCC options
-  set(REL_FLAGS "-Os ${WARN_FLAGS} -ffunction-sections -fmerge-all-constants -ffast-math")
-endif()
-
-## Uncomment this to reduce the volume of note warnings on RPi4 w/gcc-8 Ref. https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
-#if (CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
-#  set(WARN_FLAGS "${WARN_FLAGS} -Wno-psabi"
-#endif()
-
-# Use libtcmalloc for Debug builds memory leaks detection
-set(DBG_FLAGS "-ggdb -gdwarf-2 -O0  ${WARN_FLAGS} -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free")
-
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-  #TODO: -fno-rtti
-  message("Building Release ...")
-  set(CMAKE_C_FLAGS   "$ENV{CFLAGS} ${CMAKE_C_FLAGS} -std=c11 ${REL_FLAGS}")
-  set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 ${REL_FLAGS}")
-else()
-  set(USE_TCMALLOC 1)
-  message("Building Debug ...")
-  include(tools/FindTcmalloc.cmake)
-  set(CMAKE_C_FLAGS   "$ENV{CFLAGS} ${CMAKE_C_FLAGS} -std=c11 ${DBG_FLAGS}")
-  set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 ${DBG_FLAGS}")
-endif()
-
-#Remove /Zi for Win32 debug compiler issue
-if(MSVC)
-  string( TOLOWER "${CMAKE_VS_PLATFORM_NAME}" PLATFORM_NAME_LOWER )
-  if (PLATFORM_NAME_LOWER STREQUAL "win32")
-    string(REGEX REPLACE "/Z[iI7]" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-    string(REGEX REPLACE "/Z[iI7]" "" CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}")
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(WARN_FLAGS "/W4 /WX")
+  else()
+    # No -pedantic -Wno-extra-semi -Wno-gnu-zero-variadic-macro-arguments
+    set(WARN_FLAGS "-Wall -Werror -Wextra -Wno-unused-parameter")
   endif()
+
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # Using GCC with -s and -Wl linker flags
+    set(REL_FLAGS "-s -Wl,--gc-sections -Os ${WARN_FLAGS} -ffunction-sections -fdata-sections -fmerge-all-constants -ffast-math")
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(REL_FLAGS "${WARN_FLAGS}")
+  else()
+    # Using clang - strip unsupported GCC options
+    set(REL_FLAGS "-Os ${WARN_FLAGS} -ffunction-sections -fmerge-all-constants -ffast-math")
+  endif()
+
+  ## Uncomment this to reduce the volume of note warnings on RPi4 w/gcc-8 Ref. https://gcc.gnu.org/ml/gcc/2017-05/msg00073.html
+  #if (CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
+  #  set(WARN_FLAGS "${WARN_FLAGS} -Wno-psabi"
+  #endif()
+
+  # Use libtcmalloc for Debug builds memory leaks detection
+  set(DBG_FLAGS "-ggdb -gdwarf-2 -O0  ${WARN_FLAGS} -fno-builtin-malloc -fno-builtin-calloc -fno-builtin-realloc -fno-builtin-free")
+
+  if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #TODO: -fno-rtti
+    message("Building Release ...")
+    set(CMAKE_C_FLAGS   "$ENV{CFLAGS} ${CMAKE_C_FLAGS} -std=c11 ${REL_FLAGS}")
+    set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 ${REL_FLAGS}")
+  else()
+    set(USE_TCMALLOC 1)
+    message("Building Debug ...")
+    include(tools/FindTcmalloc.cmake)
+    set(CMAKE_C_FLAGS   "$ENV{CFLAGS} ${CMAKE_C_FLAGS} -std=c11 ${DBG_FLAGS}")
+    set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} ${CMAKE_CXX_FLAGS} -std=c++11 ${DBG_FLAGS}")
+  endif()
+endif()
+
+#Remove /Zi for Win32, GameCore, WinRT debug compiler issue
+if(MSVC)
+  string(REGEX REPLACE "/Z[iI7]" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  string(REGEX REPLACE "/Z[iI7]" "" CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG}")
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -169,15 +158,17 @@ endif()
 include(tools/Utils.cmake)
 
 if (NOT DEFAULT_PAL_IMPLEMENTATION)
-if(MSVC)
-  set(DEFAULT_PAL_IMPLEMENTATION WIN32)
-else()
-# Linux, Mac OS X, MinGW, etc.
-  set(DEFAULT_PAL_IMPLEMENTATION CPP11)
-endif()
+  if(MSVC)
+    set(DEFAULT_PAL_IMPLEMENTATION WIN32)
+  else()
+  # Linux, Mac OS X, MinGW, etc.
+    set(DEFAULT_PAL_IMPLEMENTATION CPP11)
+  endif()
 endif()
 
-set(PAL_IMPLEMENTATION ${DEFAULT_PAL_IMPLEMENTATION})
+if((APPLE) OR (${CMAKE_SYSTEM_NAME} STREQUAL "Android"))
+  set(PAL_IMPLEMENTATION ${DEFAULT_PAL_IMPLEMENTATION})
+endif()
 
 message(STATUS "-- PAL implementation: ${PAL_IMPLEMENTATION}")
 string(TOUPPER ${PAL_IMPLEMENTATION} PAL_IMPLEMENTATION_UPPER)
@@ -188,13 +179,12 @@ if(GCC5_CXX11_ABI_WORKAROUND)
   add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 endif()
 
-option(USE_ONEDS_BOUNDCHECK_METHODS "Use bound check methods for C99 functions" OFF)
-if (USE_ONEDS_BOUNDCHECK_METHODS)
-  add_definitions(-DHAVE_ONEDS_BOUNDCHECK_METHODS)
+if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
+ add_definitions(-DZLIB_WINAPI -DHAVE_MAT_ZLIB=1)
 endif()
 
-if(PAL_IMPLEMENTATION STREQUAL "WIN32")
- add_definitions(-DZLIB_WINAPI)
+if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
+  set(CPPWINRT_NUGET_PATH $ENV{NUGET_PACKAGES_PATH}/Microsoft.Windows.CppWinRT.2.0.210505.3)
 endif()
 
 add_definitions(-DNOMINMAX)
@@ -230,7 +220,7 @@ message(STATUS "-- SDK version: ${SDK_VERSION_PREFIX}-${MATSDK_BUILD_VERSION}")
 
 # Only use custom curl if compiling with CPP11 PAL
 if (PAL_IMPLEMENTATION STREQUAL "CPP11")
-
+  
   if(NOT BUILD_IOS)
     include(FindCURL)
     find_package(CURL REQUIRED)
@@ -253,13 +243,10 @@ option(BUILD_UNIT_TESTS   "Build unit tests"        YES)
 option(BUILD_FUNC_TESTS   "Build functional tests"  YES)
 option(BUILD_JNI_WRAPPER  "Build JNI wrapper"       NO)
 option(BUILD_OBJC_WRAPPER "Build Obj-C wrapper"     YES)
-option(BUILD_SWIFT_WRAPPER "Build Swift Wrappers"   YES)
 option(BUILD_PACKAGE      "Build package"           YES)
 option(BUILD_PRIVACYGUARD "Build Privacy Guard"     YES)
 option(BUILD_CDS          "Build CDS - Common Diagnostic Stack"     YES)
 option(BUILD_LIVEEVENTINSPECTOR   "Build Live Event Inspector"      YES)
-option(BUILD_SIGNALS      "Build Signals"           YES)
-option(LINK_STATIC_DEPENDS "Link dependencies for static build"     YES)
 
 # Enable Azure Monitor / Application Insights end-point support
 option(BUILD_AZMON        "Build for Azure Monitor" YES)
@@ -273,6 +260,12 @@ if(BUILD_UNIT_TESTS OR BUILD_FUNC_TESTS)
     add_library(gtest STATIC IMPORTED GLOBAL)
     message("Adding gmock")
     add_library(gmock STATIC IMPORTED GLOBAL)
+    
+#    message("Building libraries! - Path: ${CMAKE_CURRENT_SOURCE_DIR} ")
+#    message("Building gtest")
+#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/)
+#    message("Building gmock")
+#    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/)
 endif()
 
 if(BUILD_APPLE_HTTP)
@@ -296,6 +289,9 @@ endif()
 include_directories(lib/include)
 
 if(BUILD_LIBRARY)
+  if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+  endif()
   add_subdirectory(lib)
 endif()
 

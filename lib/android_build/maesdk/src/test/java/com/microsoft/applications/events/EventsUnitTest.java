@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 package com.microsoft.applications.events;
@@ -180,8 +180,7 @@ public class EventsUnitTest {
             String app_language,
             String os_major_version,
             String os_full_version,
-            String time_zone,
-            String device_class
+            String time_zone
         )
         {
             assertEquals("A:com.microsoft.nemotronics.doodad", app_id);
@@ -190,7 +189,6 @@ public class EventsUnitTest {
             assertEquals("GECOS III", os_major_version);
             assertEquals("GECOS III null", os_full_version);
             assertTrue(Pattern.matches("^([-+])\\d\\d:\\d\\d", time_zone));
-            assertEquals("Android.PC", device_class);
         }
     }
 
@@ -214,7 +212,6 @@ public class EventsUnitTest {
         when(mockContext.getResources()).thenReturn(mockResources);
         mockConfiguration.locale = new Locale("foobar");
         when(mockResources.getConfiguration()).thenReturn(mockConfiguration);
-        when(mockConfiguration.isLayoutSizeAtLeast(anyInt())).thenReturn(true);
         assertEquals(mockPackageManager, mockContext.getPackageManager());
         assertEquals(mockPackageInfo, mockPackageManager.getPackageInfo("foobar", 0));
         assertEquals("FunTimes.3", mockPackageInfo.versionName);

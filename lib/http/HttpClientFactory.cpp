@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "mat/config.h"
@@ -18,6 +18,8 @@
     #include "http/HttpClient_WinRt.hpp"
   #elif defined(HAVE_MAT_WININET_HTTP_CLIENT)
     #include "http/HttpClient_WinInet.hpp"
+  #else
+    #include "http/HttpClient_WinHttp.hpp"
   #endif
 #elif defined(MATSDK_PAL_CPP11)
   #if TARGET_OS_IPHONE || (defined(__APPLE__) && defined(APPLE_HTTP))
@@ -48,7 +50,12 @@ namespace MAT_NS_BEGIN {
         LOG_TRACE("Creating HttpClient_WinInet");
         return std::make_shared<HttpClient_WinInet>();
     }
-
+#else
+    /* Xplat WinHTTP HTTP client */
+    std::shared_ptr<IHttpClient> HttpClientFactory::Create() {
+        LOG_TRACE("Creating HttpClient_WinHttp");
+        return std::make_shared<HttpClient_WinHttp>();
+    }
 #endif
 #elif defined(HAVE_MAT_CURL_HTTP_CLIENT)
     std::shared_ptr<IHttpClient> HttpClientFactory::Create() {

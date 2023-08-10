@@ -1,21 +1,24 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "pal/PAL.hpp"
-
-#include <collection.h>
 
 #include "ISystemInformation.hpp"
 #include "pal/SystemInformationImpl.hpp"
 #include "pal/desktop/WindowsEnvironmentInfo.hpp"
 #include "PlatformHelpers.h"
 
+#include <winrt/Windows.ApplicationModel.h>
+#include <winrt/Windows.System.UserProfile.h>
+#include <winrt/Windows.System.Profile.h>
+#include <winrt/Windows.Globalization.h>
+
 using namespace std;
-using namespace ::Windows::ApplicationModel;
-using namespace ::Windows::System::UserProfile;
-using namespace ::Windows::System::Profile;
-using namespace ::Windows::Globalization;
+using namespace winrt::Windows::ApplicationModel;
+using namespace winrt::Windows::System::UserProfile;
+using namespace winrt::Windows::System::Profile;
+using namespace winrt::Windows::Globalization;
 
 using namespace Microsoft::Applications::Telemetry::Windows;
 
@@ -33,25 +36,19 @@ namespace PAL_NS_BEGIN {
     SystemInformationImpl::SystemInformationImpl(IRuntimeConfig& /*configuration*/)
         : m_info_helper()
     {
-        if (MAT::IsRunningInApp())
-        {
-            auto version = Package::Current->Id->Version;
+        auto version = Package::Current().Id().Version();
 
-            m_app_id = FromPlatformString(Package::Current->Id->Name);
-            m_app_version = std::to_string(version.Major) + "." + std::to_string(version.Minor) + "." + std::to_string(version.Build) + "." + std::to_string(version.Revision);
-        }
-        else
-        {
-            LOG_WARN("Not running in packaged app. Unable to obtain app id and version!");
-        }
+        m_app_id = FromPlatformString(Package::Current().Id().Name());
+        m_app_version = std::to_string(version.Major) + "." + std::to_string(version.Minor)
+            + "." + std::to_string(version.Build) + "." + std::to_string(version.Revision);
 
         m_user_language = "en";
         try {
-            if (GlobalizationPreferences::Languages->Size)
-                m_user_language = FromPlatformString(GlobalizationPreferences::Languages->GetAt(0));
+            if (GlobalizationPreferences::Languages().Size())
+                m_user_language = FromPlatformString(GlobalizationPreferences::Languages().GetAt(0));
             m_user_timezone = WindowsEnvironmentInfo::GetTimeZone();
         }
-        catch (AccessDeniedException^)
+        catch (winrt::hresult_access_denied&)
         {
             // Windows 10 RS4+ OS bug: sometimes access to GlobalizationPreferences::Languages fails
             // with "Access Denied" error. It is not certain if it's because the list is empty or
@@ -61,9 +58,9 @@ namespace PAL_NS_BEGIN {
 
         try
         {
-            m_user_advertising_id = FromPlatformString(AdvertisingManager::AdvertisingId);
+            m_user_advertising_id = FromPlatformString(AdvertisingManager::AdvertisingId());
         }
-        catch (Exception^)
+        catch (winrt::hresult_error&)
         {
             // This throws FileNotFoundException on Windows 10 v10033/UAP v22623.
         }
@@ -80,7 +77,7 @@ namespace PAL_NS_BEGIN {
 
         // The DeviceFamilyVersion is a decimalized form of the ULONGLONG hex form. For example:
         // 2814750430068736 = 000A000027840000 = 10.0.10116.0
-        auto versionDec = std::stoull(AnalyticsInfo::VersionInfo->DeviceFamilyVersion->Data());
+        auto versionDec = std::stoull(AnalyticsInfo::VersionInfo().DeviceFamilyVersion().data());
         if (versionDec != 0ull)
         {
             m_os_major_version = std::to_string(versionDec >> 16 * 3) + "." + std::to_string(versionDec >> 16 * 2 & 0xFFFF);
@@ -92,7 +89,7 @@ namespace PAL_NS_BEGIN {
             m_os_major_version = "10.0";
         }
 
-        if (FromPlatformString(AnalyticsInfo::VersionInfo->DeviceFamily) == DeviceFamily_Mobile)
+        if (FromPlatformString(AnalyticsInfo::VersionInfo().DeviceFamily()) == DeviceFamily_Mobile)
         {
             m_os_name = WindowsPhoneOSName;
         }
@@ -101,10 +98,10 @@ namespace PAL_NS_BEGIN {
         m_os_major_version = "8.1";
         // There is no API to get full version in Windows 8.1.
 #endif
-        String ^primaryLanguage = "en";
+        winrt::hstring primaryLanguage(L"en");
         try {
-            if (ApplicationLanguages::Languages->Size) {
-                primaryLanguage = ApplicationLanguages::Languages->GetAt(0);
+            if (ApplicationLanguages::Languages().Size()) {
+                primaryLanguage = ApplicationLanguages::Languages().GetAt(0);
             }
         }
         catch (...) {

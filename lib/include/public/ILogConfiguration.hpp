@@ -130,6 +130,11 @@ namespace MAT_NS_BEGIN
     static constexpr const char* const CFG_STR_CACHE_FILE_PATH = "cacheFilePath";
 
     /// <summary>
+    /// The cache temporary folder path.
+    /// </summary>
+    static constexpr const char* const CFG_STR_CACHE_TEMP_FOLDER_PATH = "cacheTempFolderPath";
+
+    /// <summary>
     /// the cache file size limit in bytes.
     /// </summary>
     static constexpr const char* const CFG_INT_CACHE_FILE_SIZE = "cacheFileSizeLimitInBytes";
@@ -143,11 +148,6 @@ namespace MAT_NS_BEGIN
     /// The size of the RAM queue buffers, in bytes.
     /// </summary>
     static constexpr const char* const CFG_INT_RAM_QUEUE_BUFFERS = "maxDBFlushQueues";
-
-    /// <summary>
-    /// SQLite DB will be checkpointed when flushing.
-    /// </summary>
-    static constexpr const char* const CFG_BOOL_CHECKPOINT_DB_ON_FLUSH = "checkpointDBOnFlush";
 
     /// <summary>
     /// The trace level mask.
@@ -180,19 +180,9 @@ namespace MAT_NS_BEGIN
     static constexpr const char* const CFG_STR_UTC = "utc";
 
     /// <summary>
-    /// Sets the provider name when in UTC mode.
-    /// </summary>
-    static constexpr const char* const CFG_STR_UTC_PROVIDER_NAME = "providerName";
-
-    /// <summary>
     /// Set the provider group directly with a string (which will be converted to a GUID).
     /// </summary>
     static constexpr const char* const CFG_STR_PROVIDER_GROUP_ID = "providerGroupId";
-
-    /// <summary>
-    /// Skip registering the iKey with UTC, so that a pre-existing provider can be used.
-    /// </summary>
-    static constexpr const char* const CFG_STR_SKIP_IKEY_REGISTRATION = "skipIKeyRegistration";
 
     /// <summary>
     /// The maximum teardown time.
@@ -461,4 +451,3 @@ namespace MAT_NS_BEGIN
 }
 MAT_NS_END
 #endif
-

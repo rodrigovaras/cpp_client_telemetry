@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "pal/PAL.hpp"
@@ -28,8 +28,7 @@ namespace MAT_NS_BEGIN {
         {
             if (type == TicketType::TicketType_MSA_Device ||
                 type == TicketType::TicketType_AAD ||
-                type == TicketType::TicketType_XAuth_Device ||
-                type == TicketType::TicketType_AAD_Device)
+                type == TicketType::TicketType_XAuth_Device)
             {
                 m_deviceTokens[type] = std::string(tokenValue);
             }

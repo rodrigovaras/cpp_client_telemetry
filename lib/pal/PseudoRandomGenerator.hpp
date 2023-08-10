@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include <random>
@@ -10,7 +10,7 @@ namespace PAL_NS_BEGIN
     // Pseudo-random number generator (not for cryptographic usage).
     // The instances are not thread-safe, serialize access externally if needed.
     class PseudoRandomGenerator {
-#if  defined(_WIN32)  || defined (__APPLE__)
+#ifdef _WIN32
     public:
         double getRandomDouble()
         {

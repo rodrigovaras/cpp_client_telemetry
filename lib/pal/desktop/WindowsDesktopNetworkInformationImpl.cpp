@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifdef _WIN32
@@ -7,9 +7,10 @@
 #include "pal/NetworkInformationImpl.hpp"
 
 #include <Windows.h>
+#if WINAPI_FAMILY != WINAPI_FAMILY_GAMES
 #include <Wininet.h>
-
 #include "NetworkDetector.hpp"
+#endif /* WINAPI_FAMILY != WINAPI_FAMILY_GAMES */
 
 using namespace MAT;
 
@@ -25,7 +26,7 @@ namespace PAL_NS_BEGIN {
 
     class Win32NetworkInformation : public NetworkInformationImpl
     {
-#ifdef HAVE_MAT_NETDETECT
+#if defined(HAVE_MAT_NETDETECT) && (WINAPI_FAMILY != WINAPI_FAMILY_GAMES)
         std::unique_ptr<MATW::NetworkDetector> networkDetector;
 #endif
         std::string m_network_provider;
@@ -72,7 +73,7 @@ namespace PAL_NS_BEGIN {
         virtual NetworkCost GetNetworkCost() override
         {
             m_cost = NetworkCost_Unmetered;
-#ifdef HAVE_MAT_NETDETECT
+#if defined(HAVE_MAT_NETDETECT) && (WINAPI_FAMILY != WINAPI_FAMILY_GAMES)
             if (m_isNetDetectEnabled) {
                 m_cost = networkDetector->GetNetworkCost();
             }
@@ -86,7 +87,7 @@ namespace PAL_NS_BEGIN {
     {
         m_type = NetworkType_Unknown;
         m_cost = NetworkCost_Unknown;
-#ifdef HAVE_MAT_NETDETECT
+#if defined(HAVE_MAT_NETDETECT) && (WINAPI_FAMILY != WINAPI_FAMILY_GAMES)
         if (m_isNetDetectEnabled) {
             networkDetector = std::unique_ptr<MATW::NetworkDetector>(new MATW::NetworkDetector());
             networkDetector->AddRef();
@@ -98,7 +99,7 @@ namespace PAL_NS_BEGIN {
     Win32NetworkInformation::~Win32NetworkInformation()
     {
         //LOG_TRACE("Win32NetworkInformation::~Win32NetworkInformation dtor");
-#ifdef HAVE_MAT_NETDETECT
+#if defined(HAVE_MAT_NETDETECT) && (WINAPI_FAMILY != WINAPI_FAMILY_GAMES)
         if (m_isNetDetectEnabled) {
             networkDetector->Stop();
             networkDetector->Release();

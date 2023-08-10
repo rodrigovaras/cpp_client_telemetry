@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 package com.microsoft.applications.events.maesdktest;
@@ -538,7 +538,7 @@ public class LogManagerDDVUnitTest extends MaeUnitLogger {
   @Test
   public void getDefaultConfig() {
     ILogConfiguration defaultConfig = ILogConfiguration.getDefaultConfiguration();
-    final String COLLECTOR_URL_PROD = "https://mobile.events.data.microsoft.com/OneCollector/1.0/";
+    final String COLLECTOR_URL_PROD = "https://self.events.data.microsoft.com/OneCollector/1.0/";
 
     assertThat(defaultConfig.getBoolean(LogConfigurationKey.CFG_BOOL_ENABLE_ANALYTICS), is(false));
     assertThat(defaultConfig.getLong(LogConfigurationKey.CFG_INT_CACHE_FILE_SIZE), is(3145728L));

@@ -302,11 +302,10 @@ namespace MAT_NS_BEGIN
         virtual void RemoveDataInspector(const std::string& name) override;
         virtual std::shared_ptr<IDataInspector> GetDataInspector(const std::string& name) noexcept override;
 
-        virtual void PauseActivity() override;
-        virtual void ResumeActivity() override;
-        virtual void WaitPause() override;
-        virtual bool StartActivity() override;
-        virtual void EndActivity() override;
+        virtual bool IsAlive()
+        {
+            return m_alive;
+        }
 
        protected:
         std::unique_ptr<ITelemetrySystem>& GetSystem();
@@ -347,17 +346,6 @@ namespace MAT_NS_BEGIN
         DataViewerCollection m_dataViewerCollection;
         std::vector<std::shared_ptr<IDataInspector>> m_dataInspectors;
         std::recursive_mutex m_dataInspectorGuard;
-
-        std::mutex m_pause_mutex;
-        std::condition_variable m_pause_cv;
-        uint64_t m_pause_active_count = 0;
-        enum class PauseState : uint8_t
-        {
-            Active,
-            Pausing,
-            Paused
-        };
-        PauseState m_pause_state = PauseState::Active;
     };
 
 }

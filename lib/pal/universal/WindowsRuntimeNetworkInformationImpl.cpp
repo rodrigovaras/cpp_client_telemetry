@@ -1,33 +1,35 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
-#include <windows.h>
 #include "pal/NetworkInformationImpl.hpp"
-#include <exception>
 
-using namespace ::Windows::Networking::Connectivity;
+#include <winrt/Windows.Networking.Connectivity.h>
+#include <winrt/Windows.Foundation.h>
+
+
+using namespace winrt::Windows::Networking::Connectivity;
 
 namespace PAL_NS_BEGIN {
 
-                Windows::Foundation::EventRegistrationToken token;
+                winrt::event_token token;
 
                 // Helper method. Retrieves network type based on the specified connection profile.
-                NetworkType GetNetworkTypeForProfile(ConnectionProfile^ profile)
+                NetworkType GetNetworkTypeForProfile(ConnectionProfile profile)
                 {
                     if (profile != nullptr)
                     {
-                        if (profile->IsWlanConnectionProfile)
+                        if (profile.IsWlanConnectionProfile())
                         {
                             return NetworkType_Wifi;
                         }
-                        else if (profile->IsWwanConnectionProfile)
+                        else if (profile.IsWwanConnectionProfile())
                         {
                             return NetworkType_WWAN;
                         }
                         else
                         {
-                            auto IanaInterfaceType = profile->NetworkAdapter->IanaInterfaceType;
+                            auto IanaInterfaceType = profile.NetworkAdapter().IanaInterfaceType();
                             if (IanaInterfaceType == 6)
                             {
                                 return NetworkType_Wired;
@@ -39,23 +41,23 @@ namespace PAL_NS_BEGIN {
                 }
 
                 // Helper method. Retrieves network cost based on the specified connection profile.
-                NetworkCost GetNetworkCostForProfile(ConnectionProfile^ profile)
+                NetworkCost GetNetworkCostForProfile(ConnectionProfile profile)
                 {
                     if (profile != nullptr)
                     {
-                        auto cost = profile->GetConnectionCost();
+                        auto cost = profile.GetConnectionCost();
 
-                        if (cost->Roaming || cost->OverDataLimit || cost->NetworkCostType == NetworkCostType::Variable)
+                        if (cost.Roaming() || cost.OverDataLimit() || cost.NetworkCostType() == NetworkCostType::Variable)
                         {
                             return NetworkCost_OverDataLimit;
                         }
 
-                        if (cost->NetworkCostType == NetworkCostType::Fixed)
+                        if (cost.NetworkCostType() == NetworkCostType::Fixed)
                         {
                             return NetworkCost_Metered;
                         }
 
-                        if (cost->NetworkCostType == NetworkCostType::Unrestricted)
+                        if (cost.NetworkCostType() == NetworkCostType::Unrestricted)
                         {
                             return NetworkCost_Unmetered;
                         }
@@ -72,7 +74,7 @@ namespace PAL_NS_BEGIN {
                     m_type = NetworkType_Unknown;
                     m_cost = NetworkCost_Unknown;
 
-                    token.Value = 0;
+                    token.value = 0;
 
                     // If Network Detector is turned off, then no need to obtain NetworkInformation.
                     if (!m_isNetDetectEnabled)
@@ -97,53 +99,54 @@ namespace PAL_NS_BEGIN {
                         return;
                     }
 
-                    token = NetworkInformation::NetworkStatusChanged +=
-                        ref new NetworkStatusChangedEventHandler([this](Platform::Object^ sender)
-                    {
-                        // No need to use WeakReference as this is not ref counted.
-                        // See https://msdn.microsoft.com/en-us/library/hh699859.aspx for details.
-                        try {
-                            if (m_registeredCount > 0)
-                            {
-                                auto profile = NetworkInformation::GetInternetConnectionProfile();
-                                NetworkType networkType = NetworkType_Unknown;
-                                NetworkCost networkCost = NetworkCost_Unknown;
-                                if (profile != nullptr)
-                                {
-                                    networkType = GetNetworkTypeForProfile(profile);
-                                    networkCost = GetNetworkCostForProfile(profile);
-                                }
-                                // No need for the lock here - the event is called synchronously.
-                                if (m_type != networkType)
-                                {
-                                    m_type = networkType;
-                                    m_info_helper.OnChanged(NETWORK_TYPE, std::to_string(networkType));
-                                }
+                    token = NetworkInformation::NetworkStatusChanged([this](winrt::Windows::Foundation::IInspectable sender)
+                                                                     {
+                                                                         // No need to use WeakReference as this is not ref counted.
+                                                                         // See https://msdn.microsoft.com/en-us/library/hh699859.aspx for details.
+                                                                         try
+                                                                         {
+                                                                             if (m_registeredCount > 0)
+                                                                             {
+                                                                                 auto profile = NetworkInformation::GetInternetConnectionProfile();
+                                                                                 NetworkType networkType = NetworkType_Unknown;
+                                                                                 NetworkCost networkCost = NetworkCost_Unknown;
+                                                                                 if (profile != nullptr)
+                                                                                 {
+                                                                                     networkType = GetNetworkTypeForProfile(profile);
+                                                                                     networkCost = GetNetworkCostForProfile(profile);
+                                                                                 }
+                                                                                 // No need for the lock here - the event is called synchronously.
+                                                                                 if (m_type != networkType)
+                                                                                 {
+                                                                                     m_type = networkType;
+                                                                                     m_info_helper.OnChanged(NETWORK_TYPE, std::to_string(networkType));
+                                                                                 }
 
-                                if (m_cost != networkCost)
-                                {
-                                    m_cost = networkCost;
-                                    m_info_helper.OnChanged(NETWORK_COST, std::to_string(networkCost));
-                                }
-                            }
-                        }
-                        catch (...) {
-                            // Let's not fire network state change callback here because something went
-                            // really bad with Windows Networking API. If device is offline, then TPM
-                            // timer would fire and we re-check if internet is connected. If not, then
-                            // we would not perform the upload.
-                            m_type = NetworkType_Unknown;
-                            m_cost = NetworkCost_Unknown;
-                        };
-                    });
+                                                                                 if (m_cost != networkCost)
+                                                                                 {
+                                                                                     m_cost = networkCost;
+                                                                                     m_info_helper.OnChanged(NETWORK_COST, std::to_string(networkCost));
+                                                                                 }
+                                                                             }
+                                                                         }
+                                                                         catch (...)
+                                                                         {
+                                                                             // Let's not fire network state change callback here because something went
+                                                                             // really bad with Windows Networking API. If device is offline, then TPM
+                                                                             // timer would fire and we re-check if internet is connected. If not, then
+                                                                             // we would not perform the upload.
+                                                                             m_type = NetworkType_Unknown;
+                                                                             m_cost = NetworkCost_Unknown;
+                                                                         };
+                                                                     });
 
                 }
 
                 NetworkInformationImpl::~NetworkInformationImpl()
                 {
-                    if (token.Value != 0)
+                    if (token.value != 0)
                     {
-                        NetworkInformation::NetworkStatusChanged -= token;
+                        NetworkInformation::NetworkStatusChanged(token);
                     }
                 };
 

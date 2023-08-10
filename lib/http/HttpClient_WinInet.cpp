@@ -1,6 +1,6 @@
 // clang-format off
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "mat/config.h"
@@ -32,9 +32,6 @@ class WinInetRequestWrapper
     HINTERNET              m_hWinInetRequest {nullptr};
     SimpleHttpRequest*     m_request;
     BYTE                   m_buffer[1024] {0};
-    DWORD                  m_bufferUsed {0};
-    std::vector<uint8_t>   m_bodyBuffer;
-    bool                   m_readingData {false};
     bool                   isCallbackCalled {false};
     bool                   isAborted {false};
   public:
@@ -319,15 +316,20 @@ class WinInetRequestWrapper
 
     void onRequestComplete(DWORD dwError)
     {
+        std::unique_ptr<SimpleHttpResponse> response(new SimpleHttpResponse(m_id));
+
+        std::vector<uint8_t> & m_bodyBuffer = response->m_body;
+        DWORD m_bufferUsed = 0;
+
         if (dwError == ERROR_SUCCESS) {
             // If looking good so far, try to fetch the response body first.
             // It might potentially be another async operation which will
             // trigger INTERNET_STATUS_REQUEST_COMPLETE again.
 
             m_bodyBuffer.insert(m_bodyBuffer.end(), m_buffer, m_buffer + m_bufferUsed);
-            while (!m_readingData || m_bufferUsed != 0) {
+            do {
+                m_bufferUsed = 0;
                 BOOL bResult = ::InternetReadFile(m_hWinInetRequest, m_buffer, sizeof(m_buffer), &m_bufferUsed);
-                m_readingData = true;
                 if (!bResult) {
                     dwError = GetLastError();
                     if (dwError == ERROR_IO_PENDING) {
@@ -337,7 +339,6 @@ class WinInetRequestWrapper
                         // must stay valid and writable until the next
                         // INTERNET_STATUS_REQUEST_COMPLETE callback comes
                         // (that's why those are member variables).
-                        LOG_TRACE("InternetReadFile() failed: ERROR_IO_PENDING. Waiting for INTERNET_STATUS_REQUEST_COMPLETE to be called again");
                         return;
                     }
                     LOG_WARN("InternetReadFile() failed: %d", dwError);
@@ -345,14 +346,11 @@ class WinInetRequestWrapper
                 }
 
                 m_bodyBuffer.insert(m_bodyBuffer.end(), m_buffer, m_buffer + m_bufferUsed);
-            }
+            } while (m_bufferUsed == sizeof(m_buffer));
         }
-
-        std::unique_ptr<SimpleHttpResponse> response(new SimpleHttpResponse(m_id));
 
         // SUCCESS with no IO_PENDING means we're done with the response body: try to parse the response headers.
         if (dwError == ERROR_SUCCESS) {
-            response->m_body = m_bodyBuffer;
             response->m_result = HttpResult_OK;
 
             uint32_t value = 0;
@@ -566,3 +564,4 @@ bool HttpClient_WinInet::IsMsRootCheckRequired()
 #pragma warning(pop)
 #endif // HAVE_MAT_DEFAULT_HTTP_CLIENT
 // clang-format on
+

@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef HTTPCLIENTFACTORY_HPP
@@ -24,7 +24,7 @@ private:
 } MAT_NS_END
 
 // TODO: [maxgolov] - remove this once there is a better way to pass HTTP client configuration
-#if defined(MATSDK_PAL_WIN32) && !defined(_WINRT_DLL)
+#if defined(MATSDK_PAL_WIN32) && !defined(_WINRT_DLL) && (WINAPI_FAMILY != WINAPI_FAMILY_GAMES)
 #define HAVE_MAT_WININET_HTTP_CLIENT
 #include "http/HttpClient_WinInet.hpp"
 #endif

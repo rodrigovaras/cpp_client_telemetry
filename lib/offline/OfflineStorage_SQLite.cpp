@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "mat/config.h"
@@ -69,6 +69,9 @@ namespace MAT_NS_BEGIN {
                 : m_config.GetOfflineStorageMaximumSizeBytes();
         m_offlineStorageFileName = (inMemory) ? ":memory:" : (const char *)m_config[CFG_STR_CACHE_FILE_PATH];
 
+        const char* tempFolderPath = (const char *)m_config[CFG_STR_CACHE_TEMP_FOLDER_PATH];
+        m_offlineStorageTempFolderPath = (tempFolderPath ? std::string{tempFolderPath} : GetTempDirectory());
+
         if ((percentage == 0)||(percentage > 100))
         {
             percentage = DB_FULL_NOTIFICATION_DEFAULT_PERCENTAGE; // 75%
@@ -134,12 +137,6 @@ namespace MAT_NS_BEGIN {
         }
     }
 
-    void OfflineStorage_SQLite::Flush() 
-    {
-        if (m_db)
-            m_db->flush();
-    }
-    
     void OfflineStorage_SQLite::Execute(std::string command)
     {
         if (m_db)
@@ -696,9 +693,10 @@ namespace MAT_NS_BEGIN {
         SqliteStatement(*m_db, "PRAGMA auto_vacuum=FULL").select();
         SqliteStatement(*m_db, "PRAGMA journal_mode=WAL").select();
         SqliteStatement(*m_db, "PRAGMA synchronous=NORMAL").select();
+
         {
             std::ostringstream tempPragma;
-            tempPragma << "PRAGMA temp_store_directory = '" << GetTempDirectory() << "'";
+            tempPragma << "PRAGMA temp_store_directory = '" << m_offlineStorageTempFolderPath << "'";
             SqliteStatement(*m_db, tempPragma.str().c_str()).select();
             LOG_INFO("Set sqlite3 temp_store_directory to '%s'", sqlite3_temp_directory);
         }

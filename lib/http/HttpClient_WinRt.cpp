@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "mat/config.h"
@@ -19,15 +19,13 @@
 #include <pplcancellation_token.h>
 #include <ppltasks.h>
 #include <pplawait.h>
-#include <vccorlib.h>
-#include <Roapi.h>
-#include <WinInet.h>
 
-using namespace Windows::Foundation;
-using namespace Windows::Foundation::Collections;
-using namespace Windows::Storage::Streams;
+#include <winrt/Windows.Storage.Streams.h>
+
+using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::Foundation::Collections;
+using namespace winrt::Windows::Storage::Streams;
 using namespace concurrency;
-using namespace Platform;
 
 
 namespace MAT_NS_BEGIN {
@@ -39,8 +37,8 @@ namespace MAT_NS_BEGIN {
         SimpleHttpRequest*     m_request;
         const std::string      m_id;
         IHttpResponseCallback* m_appCallback;
-        HttpRequestMessage^    m_httpRequestMessage;
-        HttpResponseMessage^   m_httpResponseMessage;
+        HttpRequestMessage    m_httpRequestMessage;
+        HttpResponseMessage   m_httpResponseMessage;
         concurrency::cancellation_token_source m_cancellationTokenSource;
 
     public:
@@ -82,59 +80,61 @@ namespace MAT_NS_BEGIN {
             try
             {
                 // Convert std::string to Uri
-                Uri ^ uri = ref new Uri(to_platform_string(m_request->m_url));
+                Uri uri(to_platform_string(m_request->m_url));
                 // Create new request message
                 if (m_request->m_method.compare("GET") == 0)
                 {
-                    m_httpRequestMessage = ref new HttpRequestMessage(HttpMethod::Get, uri);
+                    m_httpRequestMessage = HttpRequestMessage(HttpMethod::Get(), uri);
                 }
                 else
                 {
-                    m_httpRequestMessage = ref new HttpRequestMessage(HttpMethod::Post, uri);
+                    m_httpRequestMessage = HttpRequestMessage(HttpMethod::Post(), uri);
                 }
 
                 // Initialize the in-memory stream where data will be stored.
-                DataWriter^ dataWriter = ref new DataWriter();
-                dataWriter->WriteBytes((Platform::ArrayReference<unsigned char>(reinterpret_cast<unsigned char*>(m_request->m_body.data()), (DWORD)m_request->m_body.size())));
-                IBuffer ^ibuffer = dataWriter->DetachBuffer();
-                HttpBufferContent^ httpBufferContent = ref new HttpBufferContent(ibuffer);
+                winrt::Windows::Storage::Streams::InMemoryRandomAccessStream stream;
 
-                m_httpRequestMessage->Content = httpBufferContent;// ref new HttpBufferContent(ibuffer);
+                DataWriter dataWriter{stream};
+                dataWriter.WriteBytes(m_request->m_body);
+                IBuffer ibuffer = dataWriter.DetachBuffer();
+                HttpBufferContent httpBufferContent(ibuffer);
+
+                m_httpRequestMessage.Content(httpBufferContent);  // ref new HttpBufferContent(ibuffer);
 
                 // Populate headers based on user-supplied headers
                 for (auto &kv : m_request->m_headers)
                 {
-                    Platform::String^ key = to_platform_string(kv.first);
-                    Platform::String^ value = to_platform_string(kv.second);
+                    winrt::hstring key = to_platform_string(kv.first);
+                    winrt::hstring value = to_platform_string(kv.second);
 
                     if (kv.first.compare("Expect") == 0)
                     {
-                        m_httpRequestMessage->Headers->Expect->TryParseAdd(value);
+                        m_httpRequestMessage.Headers().Expect().TryParseAdd(value);
                         continue;
                     }
                     if (kv.first.compare("Content-Encoding") == 0)
                     {
-                        m_httpRequestMessage->Content->Headers->ContentEncoding->Append(ref new HttpContentCodingHeaderValue(value));
+                        m_httpRequestMessage.Content().Headers().ContentEncoding().Append(HttpContentCodingHeaderValue(value));
                         continue;
                     }
                     if (kv.first.compare("Content-Type") == 0)
                     {
-                        m_httpRequestMessage->Content->Headers->ContentType = ref new HttpMediaTypeHeaderValue(value);
+                        m_httpRequestMessage.Content().Headers().ContentType(HttpMediaTypeHeaderValue(value));
                         continue;
                     }
 
-                    m_httpRequestMessage->Headers->TryAppendWithoutValidation(key, value);
+                    m_httpRequestMessage.Headers().TryAppendWithoutValidation(key, value);
                 }
             }
-            catch (Platform::Exception ^ex)
+            catch (winrt::hresult_error)
             {
-                HttpResponseMessage^ failed = ref new HttpResponseMessage(HttpStatusCode::BadRequest);
+                HttpResponseMessage failed(HttpStatusCode::BadRequest);
                 onRequestComplete(failed);
                 return;
             }
             catch (...)
             {
-                HttpResponseMessage^ failed = ref new HttpResponseMessage(HttpStatusCode::BadRequest);
+                HttpResponseMessage failed(HttpStatusCode::BadRequest);
                 onRequestComplete(failed);
                 return;
             }
@@ -142,101 +142,107 @@ namespace MAT_NS_BEGIN {
             SendHttpAsyncRequest(m_httpRequestMessage);
         }
 
-        void SendHttpAsyncRequest(HttpRequestMessage ^req)
+        void SendHttpAsyncRequest(HttpRequestMessage req)
         {
-            IAsyncOperationWithProgress<HttpResponseMessage^, HttpProgress>^ operation = m_parent.getHttpClient()->SendRequestAsync(req, HttpCompletionOption::ResponseContentRead);
+            IAsyncOperationWithProgress<HttpResponseMessage, HttpProgress> operation = m_parent.getHttpClient().SendRequestAsync(req, HttpCompletionOption::ResponseContentRead);
             m_cancellationTokenSource = cancellation_token_source();
+            auto cancellationToken = m_cancellationTokenSource.get_token();
 
-            create_task(operation, m_cancellationTokenSource.get_token()).
-                then([this](task<HttpResponseMessage^> responseTask)
-            {
-                try
-                {
-                    // Check if any previous task threw an exception.
-                    m_httpResponseMessage = responseTask.get();
-                    //if (response->StatusCode != HttpStatusCode::None)
-                    {
-                        onRequestComplete(m_httpResponseMessage);
-                    }
-                }
-                catch (Platform::Exception ^ex)
-                {
-                    HttpResponseMessage^ failed = nullptr;
-                    if (ex->HResult == 0x80072ee7)
-                    {
-                        failed = ref new HttpResponseMessage(HttpStatusCode::NotFound);
-                    }
-                    else
-                    {
-                        failed = ref new HttpResponseMessage(HttpStatusCode::BadRequest);
-                    }
+            operation.Progress([this, cancellationToken](IAsyncOperationWithProgress<HttpResponseMessage, HttpProgress> const& sender, HttpProgress const&)
+                               {
+                                   if (cancellationToken.is_canceled())
+                                   {
+                                       sender.Cancel();
+                                   }
+                               });
 
-                    onRequestComplete(failed);
-                }
-                catch (...)
-                {
-                    HttpResponseMessage^ failed = ref new HttpResponseMessage(HttpStatusCode::BadRequest);
-                    onRequestComplete(failed);
-                }
-            });
+            operation.Completed([this](IAsyncOperationWithProgress<HttpResponseMessage, HttpProgress> const& sender, AsyncStatus const)
+                                {
+                                    try
+                                    {
+                                        // Check if any previous task threw an exception.
+                                        m_httpResponseMessage = sender.GetResults();
+                                        // if (m_httpResponseMessage.StatusCode() != HttpStatusCode::None)
+                                        {
+                                            onRequestComplete(m_httpResponseMessage);
+                                        }
+                                    }
+                                    catch (winrt::hresult_error const& ex)
+                                    {
+                                        HttpResponseMessage failed;
+                                        if (ex.code().value == 0x80072ee7)
+                                        {
+                                            failed = HttpResponseMessage(HttpStatusCode::NotFound);
+                                        }
+                                        else
+                                        {
+                                            failed = HttpResponseMessage(HttpStatusCode::BadRequest);
+                                        }
+
+                                        onRequestComplete(failed);
+                                    }
+                                    catch (...)
+                                    {
+                                        HttpResponseMessage failed(HttpStatusCode::BadRequest);
+                                        onRequestComplete(failed);
+                                    }
+                                });
         }
 
-        void onRequestComplete(HttpResponseMessage^ httpResponse)
+        void onRequestComplete(HttpResponseMessage httpResponse)
         {
             std::unique_ptr<SimpleHttpResponse> response(new SimpleHttpResponse(m_id));
-            response->m_statusCode = static_cast<unsigned int>(httpResponse->StatusCode);
-            if (httpResponse->IsSuccessStatusCode)
+            response->m_statusCode = static_cast<unsigned int>(httpResponse.StatusCode());
+            if (httpResponse.IsSuccessStatusCode())
             {
                 response->m_result = HttpResult_OK;
-                IMapView<String^, String^>^ mapView = httpResponse->Headers->GetView();
+                IMapView<winrt::hstring, winrt::hstring> mapView = httpResponse.Headers().GetView();
 
-                auto iterator = mapView->First();
+                auto iterator = mapView.First();
                 unsigned int  index = 0;
-                while (index < mapView->Size)
+                while (index < mapView.Size())
                 {
-                    String^ Key = iterator->Current->Key;
-                    String^ Value = iterator->Current->Value;
+                    winrt::hstring Key = iterator.Current().Key();
+                    winrt::hstring Value = iterator.Current().Value();
 
                     response->m_headers.add(from_platform_string(Key), from_platform_string(Value));
-                    iterator->MoveNext();
+                    iterator.MoveNext();
                     index++;
                 }
 
-                auto operation = m_httpResponseMessage->Content->ReadAsBufferAsync();
-                auto task = create_task(operation);
-                if (task.wait() == task_status::completed)
-                {
-                    IMapView<String^, String^>^ contentHeadersView = m_httpResponseMessage->Content->Headers->GetView();
+                auto operation = m_httpResponseMessage.Content().ReadAsBufferAsync();
+                operation.Completed([this, &response](winrt::Windows::Foundation::IAsyncOperationWithProgress<winrt::Windows::Storage::Streams::IBuffer, uint64_t> const& sender, AsyncStatus const)
+                                    {
+                                        IMapView<winrt::hstring, winrt::hstring> contentHeadersView = m_httpResponseMessage.Content().Headers().GetView();
 
-                    auto contentHeadersiterator = contentHeadersView->First();
-                    unsigned int  contentHeadersIndex = 0;
-                    while (contentHeadersIndex < contentHeadersView->Size)
-                    {
-                        String^ Key = contentHeadersiterator->Current->Key;
-                        String^ Value = contentHeadersiterator->Current->Value;
+                                        auto contentHeadersiterator = contentHeadersView.First();
+                                        unsigned int contentHeadersIndex = 0;
+                                        while (contentHeadersIndex < contentHeadersView.Size())
+                                        {
+                                            winrt::hstring Key = contentHeadersiterator.Current().Key();
+                                            winrt::hstring Value = contentHeadersiterator.Current().Value();
 
-                        response->m_headers.add(from_platform_string(Key), from_platform_string(Value));
-                        contentHeadersiterator->MoveNext();
-                        contentHeadersIndex++;
-                    }
+                                            response->m_headers.add(from_platform_string(Key), from_platform_string(Value));
+                                            contentHeadersiterator.MoveNext();
+                                            contentHeadersIndex++;
+                                        }
 
-                    auto buffer = task.get();
-                    size_t length = buffer->Length;
+                                        auto buffer = sender.GetResults();
+                                        size_t length = buffer.Length();
 
-                    if (length > 0)
-                    {
-                        response->m_body.reserve(length);
-                        response->m_body.resize(length);
-                        DataReader^ dataReader = DataReader::FromBuffer(buffer);
-                        dataReader->ReadBytes((Platform::ArrayReference<unsigned char>(reinterpret_cast<unsigned char*>(response->m_body.data()), (DWORD)length)));
-                        dataReader->DetachBuffer();
-                        delete dataReader;
-                    }
-                }
+                                        if (length > 0)
+                                        {
+                                            response->m_body.reserve(length);
+                                            response->m_body.resize(length);
+                                            auto dataReader = DataReader::FromBuffer(buffer);
+                                            dataReader.ReadBytes(response->m_body); /*(Platform::ArrayReference<unsigned char>(reinterpret_cast<unsigned char*>(response->m_body.data()), (DWORD)length)));*/
+                                            dataReader.DetachBuffer();
+                                        }
+                                    });
             }
             else
             {
-                if (httpResponse->StatusCode == HttpStatusCode::BadRequest)
+                if (httpResponse.StatusCode() == HttpStatusCode::BadRequest)
                 {
                     response->m_result = HttpResult_LocalFailure;
                 }
@@ -259,7 +265,7 @@ namespace MAT_NS_BEGIN {
 
     HttpClient_WinRt::HttpClient_WinRt()
     {
-        m_httpClient = ref new HttpClient();
+        m_httpClient = HttpClient();
     }
 
     HttpClient_WinRt::~HttpClient_WinRt()
@@ -282,10 +288,6 @@ namespace MAT_NS_BEGIN {
                 std::lock_guard<std::mutex> lock(m_requestsMutex);
                 done = m_requests.empty();
             }
-        }
-
-        if (m_httpClient) {
-            delete m_httpClient;
         }
     }
 

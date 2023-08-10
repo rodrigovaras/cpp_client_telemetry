@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef STATISTICS_HPP
@@ -73,6 +73,7 @@ namespace MAT_NS_BEGIN {
         bool                        m_isStarted;
 
         std::int64_t                m_statEventSentTime;
+        unsigned                    m_intervalMs;
 
     public:
 

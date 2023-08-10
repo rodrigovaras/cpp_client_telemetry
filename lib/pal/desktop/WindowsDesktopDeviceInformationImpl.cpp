@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #define LOG_MODULE DBG_API
@@ -22,6 +22,10 @@ MATSDK_LOG_INST_COMPONENT_NS("DeviceInfo", "Win32 Desktop Device Information")
 
 #include <locale>
 #include <codecvt>
+
+#if WINAPI_FAMILY == WINAPI_FAMILY_GAMES
+#include <XSystem.h>
+#endif
 
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "AdvAPI32.Lib")
@@ -85,6 +89,7 @@ namespace PAL_NS_BEGIN {
     PowerSource GetCurrentPowerSource()
     {
         PowerSource result = PowerSource_Unknown;
+#if WINAPI_FAMILY != WINAPI_FAMILY_GAMES
         SYSTEM_POWER_STATUS systemPowerStatus;
         if (GetSystemPowerStatus(&systemPowerStatus)) {
             // ACLineStatus - The AC power status.This member can be one of the following values.
@@ -99,6 +104,7 @@ namespace PAL_NS_BEGIN {
                     result = PowerSource_Battery;
                 }
         }
+#endif /* WINAPI_FAMILY != WINAPI_FAMILY_GAMES */
         return result;
     }
 
@@ -116,6 +122,7 @@ namespace PAL_NS_BEGIN {
 
         m_device_id = getDeviceId();
 
+#if WINAPI_FAMILY != WINAPI_FAMILY_GAMES
         char buff[256] = { 0 };
         DWORD size = sizeof(buff);
 
@@ -134,6 +141,20 @@ namespace PAL_NS_BEGIN {
             std::string tmp(buff);
             m_model = tmp;
         }
+#else
+        XSystemDeviceType deviceType = XSystemGetDeviceType();
+        switch (deviceType)
+        {
+            case XSystemDeviceType::XboxOne:                m_model = "Microsoft Xbox One"; break;
+            case XSystemDeviceType::XboxOneS:               m_model = "Microsoft Xbox One S"; break;
+            case XSystemDeviceType::XboxOneX:               m_model = "Microsoft Xbox One X"; break;
+            case XSystemDeviceType::XboxOneXDevkit:         m_model = "Microsoft Xbox One X DevKit"; break;
+            case XSystemDeviceType::XboxScarlettLockhart:   m_model = "Microsoft Xbox Series S"; break;
+            case XSystemDeviceType::XboxScarlettAnaconda:   m_model = "Microsoft Xbox Series X"; break;
+            case XSystemDeviceType::XboxScarlettDevkit:     m_model = "Microsoft Xbox Series X DevKit"; break;
+            case XSystemDeviceType::Unknown:                m_model = "Microsoft Undefined Xbox"; break;
+        }
+#endif /* WINAPI_FAMILY != WINAPI_FAMILY_GAMES */
         LOG_TRACE("Device Model=%s", m_model.c_str());
 
         m_powerSource = GetCurrentPowerSource();

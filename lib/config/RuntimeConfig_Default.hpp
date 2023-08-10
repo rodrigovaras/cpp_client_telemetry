@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "mat/config.h"
@@ -38,11 +38,10 @@ namespace MAT_NS_BEGIN
         {"utc",
          {
 #ifdef HAVE_MAT_UTC
-             {CFG_STR_PROVIDER_GROUP_ID, "780dddc8-18a1-5781-895a-a690464fa89c"},
+             {"providerGroupId", "780dddc8-18a1-5781-895a-a690464fa89c"},
              {CFG_BOOL_UTC_ENABLED, true},
              {CFG_BOOL_UTC_ACTIVE, false},
-             {CFG_BOOL_UTC_LARGE_PAYLOADS, false},
-             {CFG_STR_SKIP_IKEY_REGISTRATION, false},
+             {CFG_BOOL_UTC_LARGE_PAYLOADS, false}
 #else
              {CFG_BOOL_UTC_ENABLED, false}
 #endif
@@ -195,16 +194,6 @@ namespace MAT_NS_BEGIN
         virtual const char* GetProviderGroupId() override
         {
             return config[CFG_STR_UTC][CFG_STR_PROVIDER_GROUP_ID];
-        }
-
-        virtual const char* GetProviderName() override
-        {
-            return config[CFG_STR_UTC][CFG_STR_UTC_PROVIDER_NAME];
-        }
-
-        virtual bool SkipIKeyRegistration() const override
-        {
-            return config[CFG_STR_UTC][CFG_STR_SKIP_IKEY_REGISTRATION];
         }
 
         virtual Variant& operator[](const char* key) override

@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Copyright 2019 (c) Microsoft. All rights reserved. 
  * 
  * Custom build configuration / custom build recipe.
  */
@@ -12,6 +12,10 @@
 #include CONFIG_CUSTOM_H
 #else
 #include "config-default.h"
+#endif
+
+#if (WINAPI_FAMILY == WINAPI_FAMILY_GAMES) && !defined(_WINRT_DLL)
+#undef HAVE_MAT_UTC
 #endif
 
 #if !defined(MATSDK_PAL_WIN32) && !defined(MATSDK_PAL_CPP11)

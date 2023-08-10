@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #pragma once
@@ -12,8 +12,6 @@
 #define HAVE_MAT_JSONHPP
 #define HAVE_MAT_ZLIB
 #define HAVE_MAT_LOGGING
-#define HAVE_MAT_WIN_LOG
-#define HAVE_MAT_EVT_TRACEID
 #define HAVE_MAT_STORAGE
 #if defined(_WIN32)
 #define WIN_DESKTOP

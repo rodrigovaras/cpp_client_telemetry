@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef PLATFORMHELPERS_HPP
@@ -14,33 +14,28 @@
 
 #include <codecvt>
 
-#ifdef __cplusplus_winrt
-#ifndef _WINRT_DLL
-#define _WINRT_DLL
-#endif
-#endif
 
 #ifdef _WINRT_DLL
-#include <collection.h>
+#include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
 
-using namespace ::Windows::Foundation;
-using namespace Platform::Collections;
-using namespace ::Windows::Foundation::Collections;
-using namespace Platform;
+using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::Foundation::Collections;
 
-typedef IMapView<String^, String^> PropertyMap;
-typedef IMapView<String^, double> MeasurementMap;
-typedef IMap<String^, String^> EditablePropertyMap;
-typedef IMap<String^, double> EditableMeasurementMap;
-#define PlatformVector  Vector<String^>
-#define IPlatformVector IVector<String^>
+typedef IMapView<winrt::hstring, winrt::hstring> PropertyMap;
+typedef IMapView<winrt::hstring, double> MeasurementMap;
+typedef IMap<winrt::hstring, winrt::hstring> EditablePropertyMap;
+typedef IMap<winrt::hstring, double> EditableMeasurementMap;
+#define PlatformVector  std::vector<winrt::hstring>
+#define IPlatformVector IVector<winrt::hstring>
 
-#define platform_new ref new
+#define platform_new
 #define platform_insert Insert
 #define PlatfromEditableMap IMap
 #define PlatfromMap IMapView
 #define PlatfromMap_Underline Map
-#define WstringFromPlatformString(x) x->Data()
+#define WstringFromPlatformString(x) std::wstring(std::begin(x), std::end(x))
 #else
 #include <msclr\all.h>
 #include <msclr\marshal.h>
@@ -88,36 +83,36 @@ namespace Microsoft {
         {
             namespace Windows
             {
-                ref class TimedEvent;
-                ref class EventProperties;
-                ref struct LogConfiguration;
-                ref struct PageActionData;
-                ref struct AggregatedMetricData;
+                class TimedEvent;
+                class EventProperties;
+                struct LogConfiguration;
+                struct PageActionData;
+                struct AggregatedMetricData;
 
-                interface class ILogger;
-                interface class ISemanticContext;
+                class ILogger;
+                class ISemanticContext;
 
                 DateTime ResetPlatformDateTime();
                 DateTime SetPlatformDateTime(int64_t universalTime);
                 int64_t GetPlatformDateTime(DateTime dt);
 
-                bool IsPlatformStringEmpty(String^ platformString);
-                void ThrowPlatformInvalidArgumentException(String^ message);
-                void ThrowPlatformException(String^ message);
+                bool IsPlatformStringEmpty(winrt::hstring platformString);
+                void ThrowPlatformInvalidArgumentException(winrt::hstring message);
+                void ThrowPlatformException(winrt::hstring message);
 
                 // Defining the template function in the header file eliminates the need in additional linker definitions.
                 // platformmaptype can be read-only or editable platform map.
                 template <typename K1, typename V1, typename K2, typename V2, template<typename, typename> class platformmaptype>
-                inline void FromPlatformMap(platformmaptype<K1, V1>^ platformMap, std::map<K2, V2>& map)
+                inline void FromPlatformMap(platformmaptype<K1, V1> platformMap, std::map<K2, V2>& map)
                 {
                     if (platformMap != nullptr)
                     {
 #ifdef _WINRT_DLL
-                        auto it = platformMap->First();
-                        while (it->HasCurrent)
+                        auto it = platformMap.First();
+                        while (it.HasCurrent())
                         {
-                            map.insert(std::make_pair((K2)it->Current->Key, (V2)it->Current->Value));
-                            it->MoveNext();
+                            map.insert(std::make_pair((K2)it.Current().Key(), (V2)it.Current().Value()));
+                            it.MoveNext();
                         }
 #else
                         auto it = platformMap->GetEnumerator();
@@ -130,16 +125,16 @@ namespace Microsoft {
                 }
 
                 template <typename V1, typename V2, template<typename, typename> class platformmaptype>
-                inline void FromPlatformMap(platformmaptype<String^, V1>^ platformMap, map<string, V2>& map)
+                inline void FromPlatformMap(platformmaptype<winrt::hstring, V1> platformMap, map<string, V2>& map)
                 {
                     if (platformMap != nullptr)
                     {
 #ifdef _WINRT_DLL
-                        auto it = platformMap->First();
-                        while (it->HasCurrent)
+                        auto it = platformMap.First();
+                        while (it.HasCurrent())
                         {
-                            map.insert(std::make_pair(FromPlatformString(it->Current->Key), (V2)it->Current->Value));
-                            it->MoveNext();
+                            map.insert(std::make_pair(FromPlatformString(it.Current().Key()), (V2)it.Current().Value()));
+                            it.MoveNext();
                         }
 #else
                         auto it = platformMap->GetEnumerator();
@@ -152,16 +147,16 @@ namespace Microsoft {
                 }
 
                 template <template<typename, typename> class platformmaptype>
-                inline void FromPlatformMap(platformmaptype<String^, String^>^ platformMap, std::map<string, string>& map)
+                inline void FromPlatformMap(platformmaptype<winrt::hstring, winrt::hstring> platformMap, std::map<string, string>& map)
                 {
                     if (platformMap != nullptr)
                     {
 #ifdef _WINRT_DLL
-                        auto it = platformMap->First();
-                        while (it->HasCurrent)
+                        auto it = platformMap.First();
+                        while (it.HasCurrent())
                         {
-                            map.insert(std::make_pair(FromPlatformString(it->Current->Key), FromPlatformString(it->Current->Value)));
-                            it->MoveNext();
+                            map.insert(std::make_pair(FromPlatformString(it.Current().Key()), FromPlatformString(it.Current().Value())));
+                            it.MoveNext();
                         }
 #else
                         auto it = platformMap->GetEnumerator();
@@ -201,9 +196,9 @@ namespace Microsoft {
                     return wstrTo;
                 }
 
-                inline std::string FromPlatformString(String^ platformString)
+                inline std::string FromPlatformString(winrt::hstring platformString)
                 {
-                    if (platformString != nullptr)
+                    if (!platformString.empty())
                     {
 #ifdef _WINRT_DLL
                         wstring ws = WstringFromPlatformString(platformString);
@@ -220,36 +215,39 @@ namespace Microsoft {
                     return std::string();
                 }
 
-                inline String^ ToPlatformString(const std::string& string)
+                inline winrt::hstring ToPlatformString(const std::string& string)
                 {
-                    return platform_new String(UTF8ToWstring(string).c_str());
+                    return platform_new winrt::hstring(UTF8ToWstring(string).c_str());
                 }
 
-                PropertyMap^ ToPlatformPropertyMap(const std::map<std::string, std::string>& map);
+                PropertyMap ToPlatformPropertyMap(const std::map<std::string, std::string>& map);
 
-                MeasurementMap^ ToPlatformMeasurementMap(const std::map<std::string, double>& map);
+                MeasurementMap ToPlatformMeasurementMap(const std::map<std::string, double>& map);
 
-                EditablePropertyMap^ ToPlatformEditablePropertyMap(const std::map<std::string, std::string>& map);
+                EditablePropertyMap ToPlatformEditablePropertyMap(const std::map<std::string, std::string>& map);
 
-                EditablePropertyMap^ ToPlatformEditablePropertyMap(const std::map<std::string, MAT::EventProperty>& map);
+                EditablePropertyMap ToPlatformEditablePropertyMap(const std::map<std::string, MAT::EventProperty>& map);
 
-                EditableMeasurementMap^ ToPlatformEditableMeasurementMap(const std::map<std::string, double>& map);
+                EditableMeasurementMap ToPlatformEditableMeasurementMap(const std::map<std::string, double>& map);
 
-                EditablePropertyMap^ CreateEditablePropertyMap(PropertyMap^source = nullptr); // ref new Map<String^, String^>();
+                EditablePropertyMap CreateEditablePropertyMap(PropertyMap source = nullptr); // ref new Map<String^, String^>();
 
-                EditableMeasurementMap^ CreateEditableMeasurementMap(MeasurementMap^source = nullptr); // ref new Map<String^, double>();
+                EditableMeasurementMap CreateEditableMeasurementMap(MeasurementMap source = nullptr); // ref new Map<String^, double>();
 
-                inline IPlatformVector^ ToPlatformVector(const std::vector<std::string>& v) {
-                    PlatformVector^ result = platform_new PlatformVector();
+                inline IPlatformVector ToPlatformVector(const std::vector<std::string>& v) {
+                    PlatformVector result = platform_new PlatformVector();
                     for (const auto& key : v) {
-                        String ^k = ToPlatformString(key);
+                        winrt::hstring k = ToPlatformString(key);
 #ifdef _WINRT_DLL
-                        result->Append(k);
+                        result.push_back(k);
 #else
-                        result->Add(k);
+                        result.Add(k);
 #endif
                     }
-                    return result;
+                    IPlatformVector i_vector;
+                    std::for_each(std::begin(result), std::end(result), [&i_vector](winrt::hstring& s)
+                                  { i_vector.Append(s); });
+                    return i_vector;
                 }
 
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
  * SPDX-License-Identifier: Apache-2.0
  */
 #ifndef MAT_COMMONFIELDS_H
@@ -51,8 +51,6 @@
 #define COMMONFIELDS_EVENT_INITID                            "EventInfo.InitId"
 #define COMMONFIELDS_EVENT_SEQ                               "EventInfo.Sequence"
 #define COMMONFIELDS_EVENT_PRIVTAGS                          "EventInfo.PrivTags"
-#define COMMONFIELDS_EVENT_PRIVDATACATEGORY                  "EventInfo.PrivDataCategory"
-#define COMMONFIELDS_EVENT_PRIVPRODUCT                       "EventInfo.PrivProduct"
 #define COMMONFIELDS_EVENT_LEVEL                             "EventInfo.Level"
 #define COMMONFIELDS_EVENT_PRIORITY                          "EventInfo.Priority"
 #define COMMONFIELDS_EVENT_LATENCY                           "EventInfo.Latency"

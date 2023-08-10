@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #include "pal/PAL.hpp"
@@ -18,6 +18,7 @@
 #ifdef _WINRT_DLL
 // Win 10-specific APIs
 #include <Roapi.h>
+#include <winrt/Windows.Storage.h>
 #endif
 
 #else
@@ -74,25 +75,6 @@ namespace MAT_NS_BEGIN {
 #endif
     }
 
-    bool IsRunningInApp()
-    {
-#ifdef _WINRT_DLL  // Win 10 UWP
-        typedef LONG (*LPFN_GPFN)(UINT32*, PWSTR);
-        bool isRunningInApp = true;
-
-        LPFN_GPFN lpGetPackageFamilyName = (LPFN_GPFN)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "GetCurrentPackageFamilyName");
-        if (lpGetPackageFamilyName)
-        {
-            UINT32 size = 0;
-            if (lpGetPackageFamilyName(&size, NULL) == APPMODEL_ERROR_NO_PACKAGE)
-                isRunningInApp = false;
-        }
-        return isRunningInApp;
-#else
-        return false;
-#endif
-    }
-
     /**
     * Return temporary directory on Win32 Desktop classic SKU
     * or AppData app-specific temporary directory
@@ -100,23 +82,16 @@ namespace MAT_NS_BEGIN {
     std::string GetAppLocalTempDirectory()
     {
 #ifdef _WINRT_DLL // Win 10 UWP
-        if (IsRunningInApp())
-        {
-            auto hr = RoInitialize(RO_INIT_MULTITHREADED);
-            /* Ignoring result from call to `RoInitialize` as either initialzation is successful, or else already
-             * initialized and it should be ok to proceed in both the scenarios */
-            UNREFERENCED_PARAMETER(hr);
+        auto hr = RoInitialize(RO_INIT_MULTITHREADED);
+        /* Ignoring result from call to `RoInitialize` as either initialzation is successful, or else already
+         * initialized and it should be ok to proceed in both the scenarios */
+        UNREFERENCED_PARAMETER(hr);
 
-            ::Windows::Storage::StorageFolder ^ temp = ::Windows::Storage::ApplicationData::Current->TemporaryFolder;
-            // TODO: [MG]
-            // - verify that the path ends with a slash
-            // -- add exception handler in case if AppData temp folder is not accessible
-            return from_platform_string(temp->Path->ToString());
-        }
-        else
-        {
-            return GetTempDirectory();
-        }
+        winrt::Windows::Storage::StorageFolder temp = winrt::Windows::Storage:: ApplicationData::Current().TemporaryFolder();
+        // TODO: [MG]
+        // - verify that the path ends with a slash
+        // -- add exception handler in case if AppData temp folder is not accessible
+        return from_platform_string(temp.Path());
 #else
         return GetTempDirectory();
 #endif
@@ -147,7 +122,7 @@ namespace MAT_NS_BEGIN {
         char *tmp = getenv("TMPDIR");
         if (tmp != NULL) {
             result = tmp;
-        }
+        } 
         else {
 #ifdef P_tmpdir
             if (P_tmpdir != NULL)
@@ -222,16 +197,101 @@ namespace MAT_NS_BEGIN {
         return REJECTED_REASON_OK;
     }
 
-#ifdef _WINRT
-    Platform::String ^to_platform_string(const std::string& s)
+    std::string to_string(const GUID_t& uuid)
     {
-        std::wstring wcontent(s.begin(), s.end());
-        return ref new Platform::String(wcontent.data());
+        static char inttoHex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
+        const unsigned buffSize = 36 + 1;  // 36 + null-termination
+        char buf[buffSize] = { 0 };
+
+        int  test = (uuid.Data1 >> 28 & 0x0000000F);
+        buf[0] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 24 & 0x0000000F);
+        buf[1] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 20 & 0x0000000F);
+        buf[2] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 16 & 0x0000000F);
+        buf[3] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 12 & 0x0000000F);
+        buf[4] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 8 & 0x0000000F);
+        buf[5] = inttoHex[test];
+        test = (int)(uuid.Data1 >> 4 & 0x0000000F);
+        buf[6] = inttoHex[test];
+        test = (int)(uuid.Data1 & 0x0000000F);
+        buf[7] = inttoHex[test];
+        buf[8] = '-';
+        test = (int)(uuid.Data2 >> 12 & 0x000F);
+        buf[9] = inttoHex[test];
+        test = (int)(uuid.Data2 >> 8 & 0x000F);
+        buf[10] = inttoHex[test];
+        test = (int)(uuid.Data2 >> 4 & 0x000F);
+        buf[11] = inttoHex[test];
+        test = (int)(uuid.Data2 & 0x000F);
+        buf[12] = inttoHex[test];
+        buf[13] = '-';
+        test = (int)(uuid.Data3 >> 12 & 0x000F);
+        buf[14] = inttoHex[test];
+        test = (int)(uuid.Data3 >> 8 & 0x000F);
+        buf[15] = inttoHex[test];
+        test = (int)(uuid.Data3 >> 4 & 0x000F);
+        buf[16] = inttoHex[test];
+        test = (int)(uuid.Data3 & 0x000F);
+        buf[17] = inttoHex[test];
+        buf[18] = '-';
+        test = (int)(uuid.Data4[0] >> 4 & 0x0F);
+        buf[19] = inttoHex[test];
+        test = (int)(uuid.Data4[0] & 0x0F);
+        buf[20] = inttoHex[test];
+        test = (int)(uuid.Data4[1] >> 4 & 0x0F);
+        buf[21] = inttoHex[test];
+        test = (int)(uuid.Data4[1] & 0x0F);
+        buf[22] = inttoHex[test];
+        buf[23] = '-';
+        test = (int)(uuid.Data4[2] >> 4 & 0x0F);
+        buf[24] = inttoHex[test];
+        test = (int)(uuid.Data4[2] & 0x0F);
+        buf[25] = inttoHex[test];
+        test = (int)(uuid.Data4[3] >> 4 & 0x0F);
+        buf[26] = inttoHex[test];
+        test = (int)(uuid.Data4[3] & 0x0F);
+        buf[27] = inttoHex[test];
+        test = (int)(uuid.Data4[4] >> 4 & 0x0F);
+        buf[28] = inttoHex[test];
+        test = (int)(uuid.Data4[4] & 0x0F);
+        buf[29] = inttoHex[test];
+        test = (int)(uuid.Data4[5] >> 4 & 0x0F);
+        buf[30] = inttoHex[test];
+        test = (int)(uuid.Data4[5] & 0x0F);
+        buf[31] = inttoHex[test];
+        test = (int)(uuid.Data4[6] >> 4 & 0x0F);
+        buf[32] = inttoHex[test];
+        test = (int)(uuid.Data4[6] & 0x0F);
+        buf[33] = inttoHex[test];
+        test = (int)(uuid.Data4[7] >> 4 & 0x0F);
+        buf[34] = inttoHex[test];
+        test = (int)(uuid.Data4[7] & 0x0F);
+        buf[35] = inttoHex[test];
+        buf[36] = 0;
+        return std::string(buf);
     }
 
-    std::string from_platform_string(Platform::String ^ ps)
+#if _WINRT || _WINRT_DLL
+
+    winrt::hstring to_platform_string(const std::string& s)
     {
-        std::wstring wcontent(ps->Data());
+        std::wstring wcontent(s.begin(), s.end());
+        return winrt::param::hstring(wcontent);
+    }
+
+    std::string from_platform_string(winrt::hstring& ps)
+    {
+        std::wstring wcontent(ps.begin(), ps.end());
+        return to_utf8_string(wcontent);
+    }
+
+    std::string from_platform_string(winrt::hstring ps)
+    {
+        std::wstring wcontent(ps.begin(), ps.end());
         return to_utf8_string(wcontent);
     }
 #endif

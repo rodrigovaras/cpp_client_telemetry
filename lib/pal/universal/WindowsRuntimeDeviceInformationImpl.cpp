@@ -1,8 +1,7 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
-#include <collection.h>
 #include <windows.h>
 
 #include "pal/PAL.hpp"
@@ -12,33 +11,39 @@
 
 #include <exception>
 
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Networking.Connectivity.h>
+#include <winrt/Windows.Devices.Input.h>
+#include <winrt/Windows.Security.ExchangeActiveSyncProvisioning.h>
+#include <winrt/Windows.System.Power.h>
+
 #define LOG_MODULE DBG_PAL
 
 #define DEFAULT_DEVICE_ID       "{deadbeef-fade-dead-c0de-cafebabefeed}"
 
 namespace PAL_NS_BEGIN {
 
-                using namespace ::Windows::Networking::Connectivity;
-                using namespace ::Windows::Devices::Input;
-                using namespace ::Windows::Foundation;
+                using namespace winrt::Windows::Networking::Connectivity;
+                using namespace winrt::Windows::Devices::Input;
+                using namespace winrt::Windows::Foundation;
 
                 using namespace Microsoft::Applications::Telemetry::Windows;
-                using namespace ::Windows::Security::ExchangeActiveSyncProvisioning;
-                EventRegistrationToken token1;
-                EventRegistrationToken token2;
+                using namespace winrt::Windows::Security::ExchangeActiveSyncProvisioning;
+                winrt::event_token token1;
+                winrt::event_token token2;
 
                 // Helper functions.
                 PowerSource GetCurrentPowerSource()
                 {
 #ifdef _WIN32_WINNT_WIN10
                     // Windows.System.Power was introduced in Windows 10.
-                    switch (::Windows::System::Power::PowerManager::BatteryStatus)
+                    switch (winrt::Windows::System::Power::PowerManager::BatteryStatus())
                     {
-                    case ::Windows::System::Power::BatteryStatus::Idle:
-                    case ::Windows::System::Power::BatteryStatus::Charging:
+                    case winrt::Windows::System::Power::BatteryStatus::Idle:
+                    case winrt::Windows::System::Power::BatteryStatus::Charging:
                         return PowerSource_Charging;
 
-                    case ::Windows::System::Power::BatteryStatus::Discharging:
+                    case winrt::Windows::System::Power::BatteryStatus::Discharging:
 
                         return PowerSource_Battery;
                     }
@@ -54,9 +59,9 @@ namespace PAL_NS_BEGIN {
                 {
                     m_os_architecture = WindowsEnvironmentInfo::GetProcessorArchitecture();
 
-                    auto easClientDeviceInformation = ref new ::Windows::Security::ExchangeActiveSyncProvisioning::EasClientDeviceInformation();
-                    m_model = FromPlatformString(easClientDeviceInformation->SystemProductName);
-                    m_manufacturer = FromPlatformString(easClientDeviceInformation->SystemManufacturer);
+                    auto easClientDeviceInformation = winrt::Windows::Security::ExchangeActiveSyncProvisioning::EasClientDeviceInformation();
+                    m_model = FromPlatformString(easClientDeviceInformation.SystemProductName());
+                    m_manufacturer = FromPlatformString(easClientDeviceInformation.SystemManufacturer());
 
                     bool isNetDetectEnabled = configuration[CFG_BOOL_ENABLE_NET_DETECT];
                     m_device_id = DEFAULT_DEVICE_ID;
@@ -69,14 +74,14 @@ namespace PAL_NS_BEGIN {
                         if (isNetDetectEnabled)
                         {
                             auto networkProfiles = NetworkInformation::GetConnectionProfiles();
-                            if (networkProfiles->Size != 0)
+                            if (networkProfiles.Size() != 0)
                             {
                                 // The first adapter is always LAN and cannot be removed.
                                 // TODO: Normalize the value using MD5 (per Root Tools).
-                                auto adapter = networkProfiles->GetAt(0)->NetworkAdapter;
+                                auto adapter = networkProfiles.GetAt(0).NetworkAdapter();
                                 if (adapter != nullptr)
                                 {
-                                    m_device_id = FromPlatformString(adapter->NetworkAdapterId.ToString());
+                                    m_device_id = FromPlatformString(winrt::to_hstring(adapter.NetworkAdapterId()));
                                 }
                             }
                         }
@@ -96,7 +101,7 @@ namespace PAL_NS_BEGIN {
                     m_powerSource = GetCurrentPowerSource();
 #ifdef _WIN32_WINNT_WIN10
                     // Windows.System.Power was introduced in Windows 10.
-                    auto onPowerSourceChanged = ref new ::Windows::Foundation::EventHandler<Object^>([this](Object^ sender, Object^ args)
+                    auto onPowerSourceChanged = winrt::Windows::Foundation::EventHandler<winrt::Windows::Foundation::IInspectable>([this](winrt::Windows::Foundation::IInspectable sender, winrt::Windows::Foundation::IInspectable args)
                     {
                         try
                         {
@@ -120,11 +125,8 @@ namespace PAL_NS_BEGIN {
                         }
                     });
 
-                    if (MAT::IsRunningInApp())
-                    {
-                        token1 = ::Windows::System::Power::PowerManager::BatteryStatusChanged += onPowerSourceChanged;
-                        token2 = ::Windows::System::Power::PowerManager::PowerSupplyStatusChanged += onPowerSourceChanged;
-                    }
+                    token1 = winrt::Windows::System::Power::PowerManager::BatteryStatusChanged(onPowerSourceChanged);
+                    token2 = winrt::Windows::System::Power::PowerManager::PowerSupplyStatusChanged(onPowerSourceChanged);
 
 #endif
                 }
@@ -136,11 +138,8 @@ namespace PAL_NS_BEGIN {
 
                 DeviceInformationImpl::~DeviceInformationImpl()
                 {
-                    if (MAT::IsRunningInApp())
-                    {
-                        ::Windows::System::Power::PowerManager::BatteryStatusChanged -= token1;
-                        ::Windows::System::Power::PowerManager::PowerSupplyStatusChanged -= token2;
-                    }
+                    winrt::Windows::System::Power::PowerManager::BatteryStatusChanged(token1);
+                    winrt::Windows::System::Power::PowerManager::PowerSupplyStatusChanged(token2);
                 }
 
                 std::shared_ptr<IDeviceInformation> DeviceInformationImpl::Create(IRuntimeConfig& configuration)

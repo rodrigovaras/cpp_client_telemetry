@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef WIN32_LEAN_AND_MEAN
@@ -41,7 +41,11 @@ using namespace MAT;
 
 namespace PAL_NS_BEGIN {
 
+#if WINAPI_FAMILY == WINAPI_FAMILY_GAMES
+    const std::string WindowsOSName = "Windows GameCore";
+#else
     const std::string WindowsOSName = "Windows Desktop";
+#endif /* WINAPI_FAMILY == WINAPI_FAMILY_GAMES */
 
     std::shared_ptr<ISystemInformation> SystemInformationImpl::Create(IRuntimeConfig& configuration)
     {
@@ -103,6 +107,9 @@ namespace PAL_NS_BEGIN {
      */
     std::string getAppVersion()
     {
+#if WINAPI_FAMILY == WINAPI_FAMILY_GAMES
+        return std::string();
+#else
         DWORD   dwVersionInfoSize;
         DWORD   dwUnused;
         UINT    nUnused;
@@ -137,6 +144,7 @@ namespace PAL_NS_BEGIN {
             std::to_string(static_cast<int>(LOWORD(pffi->dwProductVersionMS))) + "." +
             std::to_string(static_cast<int>(HIWORD(pffi->dwProductVersionLS))) + "." +
             std::to_string(static_cast<int>(LOWORD(pffi->dwProductVersionLS)));
+#endif /* WINAPI_FAMILY == WINAPI_FAMILY_GAMES */
     }
 
     /**
@@ -144,12 +152,16 @@ namespace PAL_NS_BEGIN {
      */
     std::string getOsBuildLabEx()
     {
+#if WINAPI_FAMILY == WINAPI_FAMILY_GAMES
+        return std::string();
+#else
         char buff[MAX_PATH] = { 0 };
         const PCSTR c_currentVersion_Key = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
         const PCSTR c_buildLabEx_ValueName = "BuildLabEx";
         DWORD size = sizeof(buff);
         RegGetValueA(HKEY_LOCAL_MACHINE, c_currentVersion_Key, c_buildLabEx_ValueName, RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY, NULL, (char*)buff, &size);
         return buff;
+#endif /* WINAPI_FAMILY == WINAPI_FAMILY_GAMES */
     }
 
     /**
@@ -157,6 +169,9 @@ namespace PAL_NS_BEGIN {
      */
     std::string getCommercialId()
     {
+#if WINAPI_FAMILY == WINAPI_FAMILY_GAMES
+        return std::string();
+#else
         char buff[MAX_PATH] = { 0 };
         const PCSTR c_groupPolicyDataCollection_Key = "SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection";
         const PCSTR c_dataCollection_Key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection";
@@ -168,6 +183,7 @@ namespace PAL_NS_BEGIN {
             RegGetValueA(HKEY_LOCAL_MACHINE, c_dataCollection_Key, c_commercialId, RRF_RT_REG_SZ, NULL, static_cast<char*>(buff), &size);
         }
         return buff;
+#endif /* WINAPI_FAMILY == WINAPI_FAMILY_GAMES */
     }
 
     /**

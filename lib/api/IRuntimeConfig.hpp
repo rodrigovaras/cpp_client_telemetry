@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef IRUNTIMECONFIG_HPP
@@ -191,17 +191,6 @@ namespace MAT_NS_BEGIN
         /// </summary>
         /// <returns>Provider Group Id</returns>
         virtual const char* GetProviderGroupId() = 0;
-
-        /// <summary>
-        /// Get UTC channel provider name
-        /// </summary>
-        /// <returns>Provider Name</returns>
-        virtual const char* GetProviderName() = 0;
-
-        /// <summary>
-        /// Get whether to skip registering the iKey with UTC
-        /// </summary>
-        virtual bool SkipIKeyRegistration() const = 0;
 
         virtual ~IRuntimeConfig() {};
     };

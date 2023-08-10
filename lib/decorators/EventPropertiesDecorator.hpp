@@ -1,5 +1,5 @@
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) 2015-2020 Microsoft Corporation and Contributors.
 // SPDX-License-Identifier: Apache-2.0
 //
 #ifndef EVENTPROPERTIESDECORATOR_HPP
@@ -24,6 +24,7 @@ namespace MAT_NS_BEGIN {
 #define RECORD_FLAGS_EVENTTAG_HASH_PII 0x00100000
 // #define MICROSOFT_EVENTTAG_DROP_PII 0x02000000
 #define RECORD_FLAGS_EVENTTAG_DROP_PII 0x00200000
+#define RECORD_FLAGS_EVENTTAG_SCRUB_IP 0x00400000
 
     class EventPropertiesDecorator : public IDecorator
     {
@@ -114,17 +115,14 @@ namespace MAT_NS_BEGIN {
                 record.data.push_back(data);
             }
 
-            auto timestamp = eventProperties.GetTimestamp();
-            if (timestamp != 0)
-                // convert timestamp in millis to ticks and add ticks for UTC time 0.
-                record.time = timestamp * 10000 + 0x89F7FF5F7B58000ULL;
-
             record.popSample = eventProperties.GetPopSample();
 
             // API surface tags('flags') are different from on-wire record.flags
             int64_t tags = eventProperties.GetPolicyBitFlags();
             int64_t flags = 0;
 
+            // Scrub/obfuscate IP addresses.
+            flags = RECORD_FLAGS_EVENTTAG_SCRUB_IP;
             // We must remap from one bitfield set to another, no way to bit-shift :(
             // At the moment 1DS SDK in direct upload mode supports DROP and MARK tags only:
             flags |= (tags & MICROSOFT_EVENTTAG_MARK_PII) ? RECORD_FLAGS_EVENTTAG_MARK_PII : 0;
