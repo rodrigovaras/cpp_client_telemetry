@@ -100,6 +100,9 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/cds/ AND BUILD_CDS)
   )
 endif()
 
+find_package(unofficial-sqlite3 REQUIRED)
+find_package(ZLIB REQUIRED)
+
 if(PAL_IMPLEMENTATION STREQUAL "CPP11")
   if(APPLE)
     list(APPEND SRCS
@@ -170,7 +173,7 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
 elseif(PAL_IMPLEMENTATION STREQUAL "WIN32")
   # Win32 Desktop for now.
   # TODO: define a separate PAL for Win10 cmake build
-  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
+  #include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
   add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -DMATSDK_PLATFORM_WINDOWS=1 -D_UTC_SDK -D_CRT_SECURE_NO_WARNINGS -DUSE_BOND -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7)
   add_definitions(/wd4005 /wd4503)
   
@@ -269,6 +272,7 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
   # find_package(sqlite3 REQUIRED)
 
   add_library(mat SHARED ${SRCS})
+
   if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
     target_compile_options(mat PUBLIC /std:c++20)
   endif()
@@ -288,6 +292,14 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
 
   endif()
 
+  if(PAL_IMPLEMENTATION STREQUAL "WIN32")
+    target_link_libraries(mat PUBLIC wininet.lib Crypt32.lib)
+    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+      target_link_libraries(mat_slimcore PUBLIC wininet.lib Crypt32.lib)
+    endif()
+  endif()
+
+
   # Add flags for obtaining system UUID via IOKit
   if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(CMAKE_SHARED_LINKER_FLAGS
@@ -298,25 +310,25 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
   #
   # TODO: allow adding "${Tcmalloc_LIBRARIES}" to target_link_libraries for memory leak debugging
   #
-  if (BUILD_STATIC_SQLITE STREQUAL "ON")
-    # Build dynamic library, but prefer statically linking sqlite3 and zlib
-    add_library(sqlite3 STATIC IMPORTED GLOBAL)
-    add_library(z STATIC IMPORTED GLOBAL)
-    target_link_libraries(mat PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+  # if (BUILD_STATIC_SQLITE STREQUAL "ON")
+  #   # Build dynamic library, but prefer statically linking sqlite3 and zlib
+  #   add_library(sqlite3 STATIC IMPORTED GLOBAL)
+  #   add_library(z STATIC IMPORTED GLOBAL)
+  #   target_link_libraries(mat PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
 
-    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-      target_link_libraries(mat_slimcore PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
-    endif()
-  else()
-    # Prefer shared libraries for sqlite3 and zlib
-    add_library(sqlite3 SHARED IMPORTED GLOBAL)
-    add_library(z SHARED IMPORTED GLOBAL)
-    target_link_libraries(mat PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+  #   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+  #     target_link_libraries(mat_slimcore PRIVATE sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+  #   endif()
+  # else()
+  #   # Prefer shared libraries for sqlite3 and zlib
+  #   add_library(sqlite3 SHARED IMPORTED GLOBAL)
+  #   add_library(z SHARED IMPORTED GLOBAL)
+  #   target_link_libraries(mat PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
 
-    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-      target_link_libraries(mat_slimcore PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
-    endif()
-  endif()
+  #   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+  #     target_link_libraries(mat_slimcore PUBLIC sqlite3 PUBLIC z ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" "${CMAKE_REQUIRED_LIBRARIES}")
+  #   endif()
+  # endif()
 
   # target_link_libraries(mat PUBLIC libsqlite3 libcurl.a libz.a libssl.a libcrypto.a "${SQLITE_LIBRARY}" "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
   install(TARGETS mat EXPORT mat LIBRARY DESTINATION ${INSTALL_LIB_DIR})
@@ -343,15 +355,15 @@ else()
     endif()
   endif()
 
-  add_library(sqlite3 STATIC IMPORTED GLOBAL)
-  add_library(z STATIC IMPORTED GLOBAL)
+  # add_library(sqlite3 STATIC IMPORTED GLOBAL)
+  # add_library(z STATIC IMPORTED GLOBAL)
 
   if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
-    target_link_libraries(mat PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+    #target_link_libraries(mat PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 
-    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-      target_link_libraries(mat_slimcore PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
-    endif()
+    # if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    #   target_link_libraries(mat_slimcore PRIVATE sqlite3.lib PUBLIC zlibd.lib ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+    # endif()
     if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
       target_link_libraries(mat PUBLIC WindowsApp.lib)
       if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
@@ -363,13 +375,20 @@ else()
     #
     # TODO: allow adding "${Tcmalloc_LIBRARIES}" to target_link_libraries for memory leak debugging
     #
-    target_link_libraries(mat PRIVATE libsqlite3.a PUBLIC libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+    #target_link_libraries(mat PRIVATE libsqlite3.a PUBLIC libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
   endif()
+  
   install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
     install(TARGETS mat_slimcore EXPORT mat_slimcore ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   endif()
 endif()
+
+if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+  target_link_libraries(mat_slimcore PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+endif()
+
+target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
@@ -378,3 +397,21 @@ message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 #  #target_link_libraries(mat PUBLIC libsqlite3.a libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 #endif()
 
+set(TARGETS_TO_INSTALL mat)
+if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    list(APPEND TARGETS_TO_INSTALL mat_slimcore)
+endif()
+
+install(TARGETS ${TARGETS_TO_INSTALL}
+  EXPORT cpp-client-telemetry-targets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+
+install(EXPORT cpp-client-telemetry-targets
+  NAMESPACE cpp-client-telemetry::
+  DESTINATION share/cpp-client-telemetry)
+
+install(
+    FILES cpp-client-telemetry-config.cmake
+    DESTINATION share/cpp-client-telemetry)

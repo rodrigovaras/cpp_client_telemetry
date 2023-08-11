@@ -1,0 +1,19 @@
+{
+    "name": "cpp-client-telemetry",
+    "version-string": "3.5.189",
+    "description": "1DS C/C++ SDK enables cross-platform telemetry collection from various Microsoft products.",
+    "homepage": "https://github.com/microsoft/cpp_client_telemetry",
+    "dependencies": [
+        "curl",
+        "sqlite3",
+        "zlib",
+        {
+            "name": "vcpkg-cmake",
+            "host": true
+        },
+        {
+            "name": "vcpkg-cmake-config",
+            "host": true
+        }
+    ]
+}
