@@ -275,12 +275,13 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
 
   if((PAL_IMPLEMENTATION STREQUAL "WIN32") OR (PAL_IMPLEMENTATION STREQUAL "GAMECORE") OR (PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT"))
     target_compile_options(mat PUBLIC /std:c++20)
+    target_compile_definitions(mat PUBLIC -DMATSDK_SHARED_LIB=1)
   endif()
 
   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
     add_library(mat_slimcore SHARED ${SRCS})
-    target_compile_definitions(mat_slimcore PUBLIC -D_PPLTASK_ASYNC_LOGGING=0)
-    target_compile_options(mat_slimcore PUBLIC /std:c++17)
+    target_compile_definitions(mat_slimcore PUBLIC -D_PPLTASK_ASYNC_LOGGING=0 -DMATSDK_SHARED_LIB=1)
+    target_compile_options(mat_slimcore PUBLIC /std:c++20)
   endif()
 
   if(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
