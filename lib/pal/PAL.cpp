@@ -316,13 +316,37 @@ namespace PAL_NS_BEGIN {
             uuid.Data4[i] = static_cast<uint8_t>(std::rand());
 
         // TODO: [MG] - replace this sprintf by more robust GUID to string converter
-        char buf[40] = { 0 };
-        sprintf(buf,
-            "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-            uuid.Data1, uuid.Data2, uuid.Data3,
-            uuid.Data4[0], uuid.Data4[1], uuid.Data4[2], uuid.Data4[3],
-            uuid.Data4[4], uuid.Data4[5], uuid.Data4[6], uuid.Data4[7]);
-        return buf;
+        std::stringstream ss;
+        ss << std::uppercase;
+        ss.width(8);
+        ss << std::hex << uuid.Data1 << '-';
+
+        ss.width(4);
+        ss << std::hex << uuid.Data2 << '-';
+
+        ss.width(4);
+        ss << std::hex << uuid.Data3 << '-';
+
+        ss.width(2);
+        ss << std::hex
+            << static_cast<short>(uuid.Data4[0])
+            << static_cast<short>(uuid.Data4[1])
+            << '-'
+            << static_cast<short>(uuid.Data4[2])
+            << static_cast<short>(uuid.Data4[3])
+            << static_cast<short>(uuid.Data4[4])
+            << static_cast<short>(uuid.Data4[5])
+            << static_cast<short>(uuid.Data4[6])
+            << static_cast<short>(uuid.Data4[7]);
+        ss << std::nouppercase;
+        // char buf[40] = { 0 };
+        // sprintf(buf,
+        //     "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+        //     uuid.Data1, uuid.Data2, uuid.Data3,
+        //     uuid.Data4[0], uuid.Data4[1], uuid.Data4[2], uuid.Data4[3],
+        //     uuid.Data4[4], uuid.Data4[5], uuid.Data4[6], uuid.Data4[7]);
+        // return buf;
+        return ss.str();
 #endif
     }
 #ifdef _MSC_VER
