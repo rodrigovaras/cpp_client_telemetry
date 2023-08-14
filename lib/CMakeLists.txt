@@ -173,7 +173,6 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
 elseif(PAL_IMPLEMENTATION STREQUAL "WIN32")
   # Win32 Desktop for now.
   # TODO: define a separate PAL for Win10 cmake build
-  #include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite)
   add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -DMATSDK_PLATFORM_WINDOWS=1 -D_UTC_SDK -D_CRT_SECURE_NO_WARNINGS -DUSE_BOND -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7)
   add_definitions(/wd4005 /wd4503)
   
@@ -198,7 +197,7 @@ elseif(PAL_IMPLEMENTATION STREQUAL "WIN32")
   endif()
 
 elseif(PAL_IMPLEMENTATION STREQUAL "GAMECORE")
-  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite ${CMAKE_CURRENT_SOURCE_DIR}/pal/gamecore)
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/pal/gamecore)
   add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_WINDOWS -D_USRDLL -DWINVER=_WIN32_WINNT_WIN7 -DWINAPI_FAMILY=WINAPI_FAMILY_GAMES -DSQLITE_DEFAULT_AUTOVACUUM=1 -DSQLITE_NO_SYNC)
   add_definitions(/wd4005 /wd4503 /wd4267)
   remove_definitions(-D_MBCS)
@@ -211,7 +210,7 @@ elseif(PAL_IMPLEMENTATION STREQUAL "GAMECORE")
     utils/StringConversion.cpp
   )
 elseif(PAL_IMPLEMENTATION STREQUAL "WIN10_WINRT")
-  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../zlib ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite ${CMAKE_CURRENT_SOURCE_DIR}/pal/universal ${CMAKE_CURRENT_SOURCE_DIR}/shared "${CMAKE_CURRENT_SOURCE_DIR}/../Solutions/win10-lib/Generated Files/")
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/pal/universal ${CMAKE_CURRENT_SOURCE_DIR}/shared "${CMAKE_CURRENT_SOURCE_DIR}/../Solutions/win10-lib/Generated Files/")
   add_definitions(-D_UNICODE -DUNICODE -DZLIB_WINAPI -DWIN32 -D_WINRT_DLL -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS -D_WINRT -D_CRT_SECURE_NO_WARNINGS)
   add_definitions(/wd4005)
   remove_definitions(-D_MBCS)
@@ -292,14 +291,6 @@ if(BUILD_SHARED_LIBS STREQUAL "ON")
     endif()
 
   endif()
-
-  if(PAL_IMPLEMENTATION STREQUAL "WIN32")
-    target_link_libraries(mat PUBLIC wininet.lib Crypt32.lib)
-    if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-      target_link_libraries(mat_slimcore PUBLIC wininet.lib Crypt32.lib)
-    endif()
-  endif()
-
 
   # Add flags for obtaining system UUID via IOKit
   if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -382,6 +373,13 @@ else()
   install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
     install(TARGETS mat_slimcore EXPORT mat_slimcore ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+  endif()
+endif()
+
+if(PAL_IMPLEMENTATION STREQUAL "WIN32")
+  target_link_libraries(mat PUBLIC wininet.lib Crypt32.lib)
+  if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+    target_link_libraries(mat_slimcore PUBLIC wininet.lib Crypt32.lib)
   endif()
 endif()
 
