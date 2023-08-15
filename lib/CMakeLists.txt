@@ -102,6 +102,7 @@ endif()
 
 find_package(unofficial-sqlite3 REQUIRED)
 find_package(ZLIB REQUIRED)
+find_package(CURL REQUIRED)
 
 if(PAL_IMPLEMENTATION STREQUAL "CPP11")
   if(APPLE)
@@ -383,6 +384,7 @@ if(PAL_IMPLEMENTATION STREQUAL "WIN32")
   endif()
 endif()
 
+message("target_link_libraries-> LIBS:${LIBS} CMAKE_THREAD_LIBS_INIT:${CMAKE_THREAD_LIBS_INIT} CMAKE_DL_LIBS:${CMAKE_DL_LIBS}")
 if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
   target_link_libraries(mat_slimcore PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 endif()
