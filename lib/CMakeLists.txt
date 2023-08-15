@@ -103,6 +103,8 @@ endif()
 find_package(unofficial-sqlite3 REQUIRED)
 find_package(ZLIB REQUIRED)
 
+set(USE_CURL False)
+
 if(PAL_IMPLEMENTATION STREQUAL "CPP11")
   if(APPLE)
     list(APPEND SRCS
@@ -130,6 +132,8 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
         http/HttpClient_Apple.mm
       )
     else()
+      find_package(CURL REQUIRED)
+      set(USE_CURL True)
       list(APPEND SRCS
         http/HttpClient_Curl.cpp
         http/HttpClient_Curl.hpp
@@ -142,6 +146,8 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
         ../third_party/Reachability/ODWReachability.m
     )
   else()
+    set(USE_CURL True)
+    find_package(CURL REQUIRED)
     list(APPEND SRCS
       http/HttpClient_Curl.cpp
       http/HttpClient_Curl.hpp
@@ -383,11 +389,16 @@ if(PAL_IMPLEMENTATION STREQUAL "WIN32")
   endif()
 endif()
 
-if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-  target_link_libraries(mat_slimcore PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+set(LINK_CURL_LIB "")
+if(USE_CURL)
+  set(LINK_CURL_LIB "CURL::libcurl")
 endif()
 
-target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
+  target_link_libraries(mat_slimcore PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LINK_CURL_LIB} ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+endif()
+
+target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LINK_CURL_LIB} ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
