@@ -230,6 +230,7 @@ if (PAL_IMPLEMENTATION STREQUAL "CPP11")
     include_directories(CURL_INCLUDE_DIRS)
     set(CMAKE_REQUIRED_LIBRARIES "${CURL_LIBRARIES}")
     list(APPEND LIBS "${CURL_LIBRARIES}")
+    message("Using CURL for 'CPP11' CURL_LIBRARIES: ${CURL_LIBRARIES}")
   endif()
 endif()
 
