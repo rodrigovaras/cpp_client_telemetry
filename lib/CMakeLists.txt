@@ -401,21 +401,4 @@ message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 #  #target_link_libraries(mat PUBLIC libsqlite3.a libz.a ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
 #endif()
 
-set(TARGETS_TO_INSTALL mat)
-if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-    list(APPEND TARGETS_TO_INSTALL mat_slimcore)
-endif()
-
-install(TARGETS ${TARGETS_TO_INSTALL}
-  EXPORT cpp-client-telemetry-targets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-
-install(EXPORT cpp-client-telemetry-targets
-  NAMESPACE cpp-client-telemetry::
-  DESTINATION share/cpp-client-telemetry)
-
-install(
-    FILES cpp-client-telemetry-config.cmake
-    DESTINATION share/cpp-client-telemetry)
+include(InstallMat.cmake)

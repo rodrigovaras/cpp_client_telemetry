@@ -17,7 +17,8 @@ if (USE_CURL)
         find_package(CURL REQUIRED)
 endif()
 
-set(TARGETNAME maesdk)
+#set(TARGETNAME maesdk)
+set(TARGETNAME mat)
 
 set(SRCS
         ${SDK_ROOT}/lib/api/AllowedLevelsCollection.cpp
@@ -155,10 +156,12 @@ find_library(
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries(maesdk PUBLIC
+target_link_libraries(${TARGETNAME} PUBLIC
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib}
         ${zlib}
         # Note: this is casuign deps build issues when using CURL ${CURL_LIBRARIES}
         )
+
+include(../../../../../../InstallMat.cmake)
