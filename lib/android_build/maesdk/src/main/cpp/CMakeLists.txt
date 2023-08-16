@@ -160,5 +160,5 @@ target_link_libraries(maesdk PUBLIC
         # included in the NDK.
         ${log-lib}
         ${zlib}
-        ${CURL_LIBRARIES}
+        # Note: this is casuign deps build issues when using CURL ${CURL_LIBRARIES}
         )
