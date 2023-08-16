@@ -20,52 +20,58 @@ endif()
 
 # Enable ARC for obj-c on Apple
 if(APPLE)
-  message("-- BUILD_IOS:              ${BUILD_IOS}")
+  set(DETECTED_IOS NO)
+  if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
+      set(DETECTED_IOS YES)
+  endif()
+
+  message("-- BUILD_IOS:              ${DETECTED_IOS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fobjc-arc")
 
   # iOS build options
-  option(BUILD_IOS           "Build for iOS"               NO)
+  option(BUILD_IOS           "Build for iOS"               ${DETECTED_IOS})
 
   if(BUILD_IOS)
     set(TARGET_ARCH "APPLE")
     set(IOS True)
     set(APPLE True)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
-    if((${IOS_PLAT} STREQUAL "iphonesimulator") AND (${IOS_ARCH} STREQUAL "arm64"))
-      # iOS arm64 simulator is supported starting BigSur
-      # Unfortunately, CMAKE produces a device binary (not simulator) when providing -miphoneos-version-min flag when building iOS arm64 simulator
-    else()
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
-    endif()
+  #   set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment target for iOS" FORCE)
+  #   if((${IOS_PLAT} STREQUAL "iphonesimulator") AND (${IOS_ARCH} STREQUAL "arm64"))
+  #   # iOS arm64 simulator is supported starting BigSur
+  #   # Unfortunately, CMAKE produces a device binary (not simulator) when providing -miphoneos-version-min flag when building iOS arm64 simulator
+  # else()
+  #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}")
+  # endif()
 
-    if((${IOS_PLAT} STREQUAL "iphoneos") OR (${IOS_PLAT} STREQUAL "iphonesimulator"))
-      set(IOS_PLATFORM "${IOS_PLAT}")
-    else()
-      message(FATAL_ERROR "Unrecognized iOS platform '${IOS_PLAT}'")
-    endif()
+  # if((${IOS_PLAT} STREQUAL "iphoneos") OR (${IOS_PLAT} STREQUAL "iphonesimulator"))
+  #   set(IOS_PLATFORM "${IOS_PLAT}")
+  # else()
+  #   message(FATAL_ERROR "Unrecognized iOS platform '${IOS_PLAT}'")
+  # endif()
 
-    if(${IOS_ARCH} STREQUAL "x86_64")
-      set(IOS_PLATFORM "iphonesimulator")
-      set(CMAKE_SYSTEM_PROCESSOR x86_64)
-    elseif(${IOS_ARCH} STREQUAL "arm64")
-      set(IOS_PLATFORM "iphoneos")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64")
-      set(CMAKE_SYSTEM_PROCESSOR arm64)
-    elseif(${IOS_ARCH} STREQUAL "arm64e")
-      set(IOS_PLATFORM "iphoneos")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64e")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64e")
-      set(CMAKE_SYSTEM_PROCESSOR arm64e)
-    else()
-      message(FATAL_ERROR "Unrecognized iOS architecture '${IOS_ARCH}'")
-    endif()
+  # if(${IOS_ARCH} STREQUAL "x86_64")
+  #   set(IOS_PLATFORM "iphonesimulator")
+  #   set(CMAKE_SYSTEM_PROCESSOR x86_64)
+  # elseif(${IOS_ARCH} STREQUAL "arm64")
+  #   set(IOS_PLATFORM "iphoneos")
+  #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64")
+  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64")
+  #   set(CMAKE_SYSTEM_PROCESSOR arm64)
+  # elseif(${IOS_ARCH} STREQUAL "arm64e")
+  #   set(IOS_PLATFORM "iphoneos")
+  #   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -arch arm64e")
+  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -arch arm64e")
+  #   set(CMAKE_SYSTEM_PROCESSOR arm64e)
+  # else()
+  #   message(FATAL_ERROR "Unrecognized iOS architecture '${IOS_ARCH}'")
+  # endif()
 
-    execute_process(COMMAND xcodebuild -version -sdk ${IOS_PLATFORM} ONLY_ACTIVE_ARCH=NO Path
-      OUTPUT_VARIABLE CMAKE_OSX_SYSROOT
-      ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  # execute_process(COMMAND xcodebuild -version -sdk ${IOS_PLATFORM} ONLY_ACTIVE_ARCH=NO Path
+  #   OUTPUT_VARIABLE CMAKE_OSX_SYSROOT
+  #   ERROR_QUIET
+  #   OUTPUT_STRIP_TRAILING_WHITESPACE)
+
     message("-- CMAKE_OSX_SYSROOT       ${CMAKE_OSX_SYSROOT}")
     message("-- ARCHITECTURE:           ${CMAKE_SYSTEM_PROCESSOR}")
     message("-- PLATFORM:               ${IOS_PLATFORM}")

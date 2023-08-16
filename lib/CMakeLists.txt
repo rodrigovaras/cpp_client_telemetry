@@ -390,6 +390,9 @@ if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
 endif()
 
 target_link_libraries(mat PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${LIBS} "${CMAKE_THREAD_LIBS_INIT}" "${CMAKE_DL_LIBS}" )
+if(APPLE)
+    target_link_libraries(mat PRIVATE "-framework Foundation -framework CoreFoundation -framework IOKit -framework Network -framework SystemConfiguration")
+endif()
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
