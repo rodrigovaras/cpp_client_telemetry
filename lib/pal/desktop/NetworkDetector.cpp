@@ -19,6 +19,9 @@
 #include "utils/Utils.hpp"
 #include "pal/PAL.hpp"
 
+// Note: next header will give us QITAB definition
+#include "Shlwapi.h"
+
 // Define a GUID that is only available in Windows 8.x+ SDK . We are using Windows 7.1A SDK for Win32 SDK build,
 // so we cannot easily add an extra dependency on Windows 8 or later functionality project-wide. It'd be error-prone,
 // because when we have all Windows 8+ features - we might fall into temptation of using that features that would

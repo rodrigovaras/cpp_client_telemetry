@@ -378,9 +378,9 @@ else()
 endif()
 
 if(PAL_IMPLEMENTATION STREQUAL "WIN32")
-  target_link_libraries(mat PUBLIC wininet.lib Crypt32.lib)
+  target_link_libraries(mat PUBLIC wininet.lib Crypt32.lib Shlwapi.lib)
   if(ENABLE_SLIMCORE_BUILD STREQUAL "ON")
-    target_link_libraries(mat_slimcore PUBLIC wininet.lib Crypt32.lib)
+    target_link_libraries(mat_slimcore PUBLIC wininet.lib Crypt32.lib Shlwapi.lib)
   endif()
 endif()
 
