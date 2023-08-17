@@ -6,6 +6,8 @@
 cmake_minimum_required(VERSION 3.10.2)
 set(CMAKE_CXX_STANDARD 11)
 
+set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation directory for libraries")
+
 # Enable Azure Monitor / Application Insights end-point support
 option(BUILD_AZMON        "Build for Azure Monitor" YES)
 option(BUILD_PRIVACYGUARD "Build Privacy Guard"     YES)
@@ -156,7 +158,7 @@ find_package(unofficial-sqlite3 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(CURL REQUIRED)
 
-install(TARGETS ${TARGETNAME} EXPORT ${TARGETNAME} ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
