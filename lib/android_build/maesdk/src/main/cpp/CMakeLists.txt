@@ -147,12 +147,14 @@ find_library( # Sets the name of the path variable.
               # you want CMake to locate.
               log )
 
-find_library(
-        zlib
-        z
-)
+# find_library(
+#         zlib
+#         z
+# )
 
 find_package(unofficial-sqlite3 REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(CURL REQUIRED)
 
 install(TARGETS ${TARGETNAME} EXPORT ${TARGETNAME} ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
 
@@ -160,16 +162,18 @@ install(TARGETS ${TARGETNAME} EXPORT ${TARGETNAME} ARCHIVE DESTINATION ${INSTALL
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries(${TARGETNAME}
-        PRIVATE unofficial::sqlite3::sqlite3
-        PUBLIC
-        # Links the target library to the log library
-        # included in the NDK.
-        ${log-lib}
-        ${zlib}
-        # Note: this is casuign deps build issues when using CURL ${CURL_LIBRARIES}
-        )
+target_link_libraries(${TARGETNAME} PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${log-lib})
 
-message("-- Library will be installed to ${INSTALL_LIB_DIR}")
+# target_link_libraries(${TARGETNAME}
+#         PRIVATE unofficial::sqlite3::sqlite3
+#         PUBLIC
+#         # Links the target library to the log library
+#         # included in the NDK.
+#         ${log-lib}
+#         ${zlib}
+#         ${CURL_LIBRARIES}
+#         )
+
+message("-- Library will be installed to ${INSTALL_LIB_DIR} TARGETNAME:${TARGETNAME}")
 
 include(../../../../../InstallMat.cmake)
