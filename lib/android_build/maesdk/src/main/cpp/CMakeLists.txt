@@ -12,7 +12,7 @@ set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation direc
 option(BUILD_AZMON        "Build for Azure Monitor" YES)
 option(BUILD_PRIVACYGUARD "Build Privacy Guard"     YES)
 
-string(REPLACE "/lib/android_build/maesdk/src/main/cpp" "" SDK_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+#string(REPLACE "/lib/android_build/maesdk/src/main/cpp" "" SDK_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (USE_CURL)
         add_definitions(-DHAVE_MAT_CURL_HTTP_CLIENT)
@@ -178,4 +178,18 @@ target_link_libraries(${TARGETNAME} PRIVATE unofficial::sqlite3::sqlite3 PUBLIC 
 
 message("-- Library will be installed to ${INSTALL_LIB_DIR} TARGETNAME:${TARGETNAME}")
 
-include(../../../../../InstallMat.cmake)
+#include(../../../../../InstallMat.cmake)
+
+install(TARGETS ${TARGETNAME}
+  EXPORT cpp-client-telemetry-targets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+
+install(EXPORT cpp-client-telemetry-targets
+  NAMESPACE cpp-client-telemetry::
+  DESTINATION share/cpp-client-telemetry)
+
+install(
+    FILES cpp-client-telemetry-config.cmake
+    DESTINATION share/cpp-client-telemetry)
