@@ -154,6 +154,8 @@ find_library(
 
 find_package(unofficial-sqlite3 REQUIRED)
 
+install(TARGETS ${TARGETNAME} EXPORT ${TARGETNAME} ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
@@ -167,5 +169,7 @@ target_link_libraries(${TARGETNAME}
         ${zlib}
         # Note: this is casuign deps build issues when using CURL ${CURL_LIBRARIES}
         )
+
+message("-- Library will be installed to ${INSTALL_LIB_DIR}")
 
 include(../../../../../InstallMat.cmake)
