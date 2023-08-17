@@ -6,21 +6,23 @@
 cmake_minimum_required(VERSION 3.10.2)
 set(CMAKE_CXX_STANDARD 11)
 
-set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation directory for libraries")
-
 # Enable Azure Monitor / Application Insights end-point support
 option(BUILD_AZMON        "Build for Azure Monitor" YES)
 option(BUILD_PRIVACYGUARD "Build Privacy Guard"     YES)
+option(BUILD_SIGNALS      "Build Signals"           YES)
 
-#string(REPLACE "/lib/android_build/maesdk/src/main/cpp" "" SDK_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+if(ENABLE_CAPI_HTTP_CLIENT)
+  add_definitions(-DENABLE_CAPI_HTTP_CLIENT)
+endif()
+
+string(REPLACE "/lib/android_build/maesdk/src/main/cpp" "" SDK_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 if (USE_CURL)
         add_definitions(-DHAVE_MAT_CURL_HTTP_CLIENT)
         find_package(CURL REQUIRED)
 endif()
 
-#set(TARGETNAME maesdk)
-set(TARGETNAME mat)
+set(TARGETNAME maesdk)
 
 set(SRCS
         ${SDK_ROOT}/lib/api/AllowedLevelsCollection.cpp
@@ -103,6 +105,14 @@ if(EXISTS ${SDK_ROOT}/lib/modules/privacyguard/ AND BUILD_PRIVACYGUARD)
         )
 endif()
 
+if (EXISTS ${SDK_ROOT}/lib/modules/signals/ AND BUILD_SIGNALS)
+        list(APPEND SRCS
+                ${SDK_ROOT}/lib/jni/Signals_jni.cpp
+                ${SDK_ROOT}/lib/modules/signals/Signals.cpp
+                ${SDK_ROOT}/lib/modules/signals/SignalsEncoder.cpp
+        )
+endif()
+
 if (USE_ROOM)
         add_definitions("-DUSE_ROOM")
         list(APPEND SRCS ${SDK_ROOT}/lib/offline/OfflineStorage_Room.cpp)
@@ -117,6 +127,10 @@ if (USE_CURL)
         list(APPEND SRCS ${SDK_ROOT}/lib/http/HttpClient_Curl.cpp)
 else()
         list(APPEND SRCS ${SDK_ROOT}/lib/http/HttpClient_Android.cpp)
+endif()
+
+if (ENABLE_CAPI_HTTP_CLIENT)
+        list(APPEND SRCS ${SDK_ROOT}/lib/http/HttpClient_CAPI.cpp)
 endif()
 
 add_library(${TARGETNAME} ${SRCS})
@@ -149,47 +163,19 @@ find_library( # Sets the name of the path variable.
               # you want CMake to locate.
               log )
 
-# find_library(
-#         zlib
-#         z
-# )
-
-find_package(unofficial-sqlite3 REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(CURL REQUIRED)
-
-install(TARGETS mat EXPORT mat ARCHIVE DESTINATION ${INSTALL_LIB_DIR})
+find_library(
+        zlib
+        z
+)
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
-target_link_libraries(${TARGETNAME} PRIVATE unofficial::sqlite3::sqlite3 PUBLIC ZLIB::ZLIB ${log-lib})
-
-# target_link_libraries(${TARGETNAME}
-#         PRIVATE unofficial::sqlite3::sqlite3
-#         PUBLIC
-#         # Links the target library to the log library
-#         # included in the NDK.
-#         ${log-lib}
-#         ${zlib}
-#         ${CURL_LIBRARIES}
-#         )
-
-message("-- Library will be installed to ${INSTALL_LIB_DIR} TARGETNAME:${TARGETNAME}")
-
-#include(../../../../../InstallMat.cmake)
-
-install(TARGETS ${TARGETNAME}
-  EXPORT cpp-client-telemetry-targets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-
-install(EXPORT cpp-client-telemetry-targets
-  NAMESPACE cpp-client-telemetry::
-  DESTINATION share/cpp-client-telemetry)
-
-install(
-    FILES cpp-client-telemetry-config.cmake
-    DESTINATION share/cpp-client-telemetry)
+target_link_libraries(maesdk PUBLIC
+        # Links the target library to the log library
+        # included in the NDK.
+        ${log-lib}
+        ${zlib}
+        ${CURL_LIBRARIES}
+        )

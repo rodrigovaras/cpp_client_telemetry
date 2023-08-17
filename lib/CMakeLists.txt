@@ -119,11 +119,22 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
       )
     endif()
   endif()
+
   list(APPEND SRCS
-    pal/posix/DeviceInformationImpl.cpp
-    pal/posix/SystemInformationImpl.cpp
     pal/posix/sysinfo_sources.cpp
-  )
+  ) 
+  if(ANDROID)
+    add_definitions(-Wno-reorder-ctor)
+    list(APPEND SRCS
+      pal/posix/DeviceInformationImpl_Android.cpp
+      pal/posix/SystemInformationImpl_Android.cpp     
+    )  
+  else()
+    list(APPEND SRCS
+      pal/posix/DeviceInformationImpl.cpp
+      pal/posix/SystemInformationImpl.cpp
+    )
+  endif()    
 
   if(APPLE)
     if(BUILD_APPLE_HTTP OR BUILD_IOS)
@@ -148,6 +159,16 @@ if(PAL_IMPLEMENTATION STREQUAL "CPP11")
       http/HttpClient_Curl.hpp
       pal/posix/NetworkInformationImpl.cpp
     )
+    if(ANDROID)
+      list(APPEND SRCS
+      pal/posix/NetworkInformationImpl_Android.cpp
+      ) 
+    else()
+      list(APPEND SRCS
+        pal/posix/NetworkInformationImpl.cpp
+      )    
+    endif()
+
   endif()
   if(APPLE AND BUILD_OBJC_WRAPPER)
 	message("Include Wrappers")

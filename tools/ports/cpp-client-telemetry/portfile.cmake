@@ -1,35 +1,13 @@
 set(VERSION 3.5.189)
 
-# vcpkg_from_git(
-#     OUT_SOURCE_PATH SOURCE_PATH
-#     URL https://github.com/microsoft/cpp_client_telemetry
-#     REF 6224f89113cd3da1b6127b4b1dfbb06ed00962f5
-# )
+vcpkg_from_git(
+    OUT_SOURCE_PATH SOURCE_PATH
+    URL https://github.com/rodrigovaras/cpp_client_telemetry.git
+    REF a5b4f5411d2342463a1877f2ab08ed351901669e
+)
 
-# if(DEFINED ENV{CPP_TELEMETRY_PRIVATE_MODULE_TOKEN})
-#     vcpkg_from_github(
-#         OUT_SOURCE_PATH MODULE_SOURCE_PATH
-#         REPO microsoft/cpp_client_telemetry_modules
-#         REF d62105a9e95c2390405173eb97e9f7fab05ba696
-#         SHA512 361b769f3b4e2ddabbc7d3ab15dcc18704c382cc1926e7b42ebb0487cd1e7020236165041217aab4f1a2f0e492af502fec74c1a2411b78a18649f83c0b658b3a
-#         AUTHORIZATION_TOKEN $ENV{CPP_TELEMETRY_PRIVATE_MODULE_TOKEN}
-#         PATCHES
-#             fixed_modules.patch
-#     )
-# else()
-#     vcpkg_from_git(
-#         OUT_SOURCE_PATH MODULE_SOURCE_PATH
-#         URL  https://github.com/microsoft/cpp_client_telemetry_modules
-#         REF d62105a9e95c2390405173eb97e9f7fab05ba696
-#         PATCHES
-#             fixed_modules.patch
-#     )
-# endif()
-
-# file (COPY ${MODULE_SOURCE_PATH}/ DESTINATION ${SOURCE_PATH}/lib/modules/)
-
-get_filename_component(SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
-message("Using local source snapshot from ${SOURCE_PATH}")
+# get_filename_component(SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
+# message("Using local source snapshot from ${SOURCE_PATH}")
 
 if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
     list(APPEND PLATFORM_OPTIONS "-DBUILD_SHARED_LIBS=ON")
@@ -43,13 +21,16 @@ if(VCPKG_CMAKE_SYSTEM_NAME STREQUAL Android)
     list(APPEND PLATFORM_OPTIONS "-DANDROID_STL=c++_shared" "-DUSE_ROOM=0" "-DUSE_CURL=1" "-DPAL_IMPLEMENTATION=CPP11")
 
     vcpkg_cmake_configure(
-        SOURCE_PATH ${SOURCE_PATH}/lib/android_build/maesdk/src/main/cpp
+        SOURCE_PATH ${SOURCE_PATH}
         OPTIONS
             ${PLATFORM_OPTIONS}
             -DCMAKE_PACKAGE_TYPE=tgz
             -DSKIP_INSTALL_PROGRAMS=ON
             -DSKIP_INSTALL_EXECUTABLES=ON
             -DSKIP_INSTALL_FILES=ON
+            -DBUILD_UNIT_TESTS=OFF
+            -DBUILD_FUNC_TESTS=OFF
+            -DANDROID=1
         OPTIONS_DEBUG
             -DSKIP_INSTALL_HEADERS=ON
     )
