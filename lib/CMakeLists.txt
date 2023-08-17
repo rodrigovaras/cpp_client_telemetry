@@ -100,6 +100,13 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/cds/ AND BUILD_CDS)
   )
 endif()
 
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/modules/signals/ AND BUILD_SIGNALS)
+  list(APPEND SRCS
+    modules/signals/Signals.cpp
+    modules/signals/SignalsEncoder.cpp
+  )
+endif()
+
 find_package(unofficial-sqlite3 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(CURL REQUIRED)

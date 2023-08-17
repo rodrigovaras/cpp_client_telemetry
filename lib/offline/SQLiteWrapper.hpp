@@ -184,6 +184,11 @@ namespace MAT_NS_BEGIN {
         {
             return ::sqlite3_vfs_find(zVfsName);
         }
+                
+        void sqlite3_wal_checkpoint(sqlite3* db) override 
+        {
+            ::sqlite3_wal_checkpoint_v2(db, NULL, SQLITE_CHECKPOINT_FULL, NULL, NULL);
+        }
     } g_realSqlite3Proxy;
 
     ISqlite3Proxy* g_sqlite3Proxy = &g_realSqlite3Proxy;
@@ -435,9 +440,7 @@ namespace MAT_NS_BEGIN {
         }
 
         bool lock() {
-            #ifdef DEBUG
             unsigned count = 0;
-            #endif
             unsigned waitTime = 0;
             while (!trylock()) {
                 if (waitTime >= MAX_DB_LOCKWAIT_DELAY) {
@@ -449,10 +452,8 @@ namespace MAT_NS_BEGIN {
                     return false;
                 }
                 waitTime += MAX_DB_LOCKWAIT_DELAY;  // 500ms, 1000ms
-                #ifdef DEBUG
                 count++;
                 LOG_DEBUG("Lock: waiting to acquire the lock: count=%u, waitTime=%u", count, waitTime);
-                #endif
                 PAL::sleep(MAX_DB_LOCKWAIT_DELAY);
             }
             LOG_DEBUG("Lock: acquired [time=%u]", waitTime);
@@ -464,6 +465,11 @@ namespace MAT_NS_BEGIN {
             SQLRecords records;
             sqlite3_exec(sql, sqlite3_select_callback, &records);
             return records;
+        }
+
+        void flush()
+        {
+            g_sqlite3Proxy->sqlite3_wal_checkpoint(m_db);
         }
 
     protected:

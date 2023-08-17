@@ -21,7 +21,7 @@ namespace MAT_NS_BEGIN
     size_t FileGetSize(const char* filename)
     {
 #ifdef _WIN32
-#if !defined(_WINRT) && !defined(_WINRT_DLL)
+#ifndef _WINRT
         /* Use Win32 Desktop API to get file name. Cannot rely on ifstream(wstring) if built with libc++ instead of msvcrt++ */
         LARGE_INTEGER largeInt;
         std::wstring filename_w = to_utf16_string(filename);

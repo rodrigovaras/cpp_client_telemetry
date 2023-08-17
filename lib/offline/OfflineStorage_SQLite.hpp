@@ -31,7 +31,7 @@ namespace MAT_NS_BEGIN {
         virtual ~OfflineStorage_SQLite() override;
         virtual void Initialize(IOfflineStorageObserver& observer) override;
         virtual void Shutdown() override;
-        virtual void Flush() override {};
+        virtual void Flush() override;
         virtual void Execute(std::string command);
         virtual bool StoreRecord(StorageRecord const& record) override;
         virtual size_t StoreRecords(std::vector<StorageRecord> & records) override;
@@ -110,7 +110,6 @@ namespace MAT_NS_BEGIN {
         size_t                      m_stmtSelectSetting_name {};
         unsigned                    m_lastReadCount {};
         std::string                 m_offlineStorageFileName {};
-        std::string                 m_offlineStorageTempFolderPath {};
         unsigned                    m_DbSizeNotificationLimit {};
         uint64_t                    m_DbSizeNotificationInterval {};
         size_t                      m_DbSizeHeapLimit {};

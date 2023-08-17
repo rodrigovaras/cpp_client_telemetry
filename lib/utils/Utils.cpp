@@ -75,6 +75,25 @@ namespace MAT_NS_BEGIN {
 #endif
     }
 
+    bool IsRunningInApp()
+    {
+#ifdef _WINRT_DLL  // Win 10 UWP
+        typedef LONG (*LPFN_GPFN)(UINT32*, PWSTR);
+        bool isRunningInApp = true;
+
+        LPFN_GPFN lpGetPackageFamilyName = (LPFN_GPFN)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "GetCurrentPackageFamilyName");
+        if (lpGetPackageFamilyName)
+        {
+            UINT32 size = 0;
+            if (lpGetPackageFamilyName(&size, NULL) == APPMODEL_ERROR_NO_PACKAGE)
+                isRunningInApp = false;
+        }
+        return isRunningInApp;
+#else
+        return false;
+#endif
+    }
+
     /**
     * Return temporary directory on Win32 Desktop classic SKU
     * or AppData app-specific temporary directory
@@ -82,16 +101,23 @@ namespace MAT_NS_BEGIN {
     std::string GetAppLocalTempDirectory()
     {
 #ifdef _WINRT_DLL // Win 10 UWP
-        auto hr = RoInitialize(RO_INIT_MULTITHREADED);
-        /* Ignoring result from call to `RoInitialize` as either initialzation is successful, or else already
-         * initialized and it should be ok to proceed in both the scenarios */
-        UNREFERENCED_PARAMETER(hr);
+        if (IsRunningInApp())
+        {
+            auto hr = RoInitialize(RO_INIT_MULTITHREADED);
+            /* Ignoring result from call to `RoInitialize` as either initialzation is successful, or else already
+            * initialized and it should be ok to proceed in both the scenarios */
+            UNREFERENCED_PARAMETER(hr);
 
-        winrt::Windows::Storage::StorageFolder temp = winrt::Windows::Storage:: ApplicationData::Current().TemporaryFolder();
-        // TODO: [MG]
-        // - verify that the path ends with a slash
-        // -- add exception handler in case if AppData temp folder is not accessible
-        return from_platform_string(temp.Path());
+            winrt::Windows::Storage::StorageFolder temp = winrt::Windows::Storage:: ApplicationData::Current().TemporaryFolder();
+            // TODO: [MG]
+            // - verify that the path ends with a slash
+            // -- add exception handler in case if AppData temp folder is not accessible
+            return from_platform_string(temp.Path());
+        }
+        else
+        {
+            return GetTempDirectory();
+        }
 #else
         return GetTempDirectory();
 #endif
@@ -122,7 +148,7 @@ namespace MAT_NS_BEGIN {
         char *tmp = getenv("TMPDIR");
         if (tmp != NULL) {
             result = tmp;
-        } 
+        }
         else {
 #ifdef P_tmpdir
             if (P_tmpdir != NULL)
@@ -196,7 +222,7 @@ namespace MAT_NS_BEGIN {
         }
         return REJECTED_REASON_OK;
     }
-
+    
     std::string to_string(const GUID_t& uuid)
     {
         static char inttoHex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };

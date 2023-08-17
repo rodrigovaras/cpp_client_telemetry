@@ -130,11 +130,6 @@ namespace MAT_NS_BEGIN
     static constexpr const char* const CFG_STR_CACHE_FILE_PATH = "cacheFilePath";
 
     /// <summary>
-    /// The cache temporary folder path.
-    /// </summary>
-    static constexpr const char* const CFG_STR_CACHE_TEMP_FOLDER_PATH = "cacheTempFolderPath";
-
-    /// <summary>
     /// the cache file size limit in bytes.
     /// </summary>
     static constexpr const char* const CFG_INT_CACHE_FILE_SIZE = "cacheFileSizeLimitInBytes";

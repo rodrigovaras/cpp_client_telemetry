@@ -20,10 +20,8 @@ namespace MAT_NS_BEGIN {
         m_logManager(telemetrySystem.getLogManager()),
         m_baseDecorator(m_logManager),
         m_semanticContextDecorator(m_logManager),
-        m_isScheduled(false),
         m_isStarted(false)
     {
-        m_intervalMs = m_config.GetMetaStatsSendIntervalSec() * 1000;
     }
 
     Statistics::~Statistics()
@@ -36,7 +34,7 @@ namespace MAT_NS_BEGIN {
             return;
         }
 
-        m_intervalMs = m_config.GetMetaStatsSendIntervalSec() * 1000;
+        unsigned int m_intervalMs = m_config.GetMetaStatsSendIntervalSec() * 1000;
         if (m_intervalMs != 0)
         {
             if (!m_isScheduled.exchange(true))
@@ -55,7 +53,7 @@ namespace MAT_NS_BEGIN {
     {
         m_isScheduled = false;
 
-        m_intervalMs = m_config.GetMetaStatsSendIntervalSec() * 1000;
+        unsigned int m_intervalMs = m_config.GetMetaStatsSendIntervalSec() * 1000;
         if (m_intervalMs == 0)
         {
             // cancel pending stats event if timer changed at runtime
@@ -91,7 +89,7 @@ namespace MAT_NS_BEGIN {
     bool Statistics::handleOnStart()
     {
         // synchronously send stats event on SDK start, but only if stats are enabled
-        if (m_intervalMs != 0)
+        if (m_config.GetMetaStatsSendIntervalSec() * 1000 != 0)
         {
             send(ACT_STATS_ROLLUP_KIND_START);
         }
@@ -109,7 +107,7 @@ namespace MAT_NS_BEGIN {
         }
 
         // synchronously send stats event on SDK stop, but only if stats are enabled
-        if (m_intervalMs != 0)
+        if (m_config.GetMetaStatsSendIntervalSec() * 1000 != 0)
         {
             send(ACT_STATS_ROLLUP_KIND_STOP);
         }
@@ -274,3 +272,4 @@ namespace MAT_NS_BEGIN {
     }
 
 } MAT_NS_END
+
