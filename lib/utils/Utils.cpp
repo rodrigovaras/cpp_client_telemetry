@@ -81,13 +81,14 @@ namespace MAT_NS_BEGIN {
         typedef LONG (*LPFN_GPFN)(UINT32*, PWSTR);
         bool isRunningInApp = true;
 
-        LPFN_GPFN lpGetPackageFamilyName = (LPFN_GPFN)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "GetCurrentPackageFamilyName");
-        if (lpGetPackageFamilyName)
-        {
-            UINT32 size = 0;
-            if (lpGetPackageFamilyName(&size, NULL) == APPMODEL_ERROR_NO_PACKAGE)
-                isRunningInApp = false;
-        }
+        // Note: we are getting this on our pipeline build -> error C3861: 'GetModuleHandle': identifier not found
+        // LPFN_GPFN lpGetPackageFamilyName = (LPFN_GPFN)GetProcAddress(GetModuleHandle(TEXT("kernel32")), "GetCurrentPackageFamilyName");
+        // if (lpGetPackageFamilyName)
+        // {
+        //     UINT32 size = 0;
+        //     if (lpGetPackageFamilyName(&size, NULL) == APPMODEL_ERROR_NO_PACKAGE)
+        //         isRunningInApp = false;
+        // }
         return isRunningInApp;
 #else
         return false;
